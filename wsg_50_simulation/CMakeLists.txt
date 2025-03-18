@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(wsg50_simulation)
+project(wsg_50_simulation)
 
 find_package(ament_cmake REQUIRED)
 

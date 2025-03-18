@@ -10,7 +10,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time', default=True)
 
-    description_file = PathJoinSubstitution([FindPackageShare('wsg50_simulation'), 'urdf', 'wsg50.urdf.xacro'])
+    description_file = PathJoinSubstitution([FindPackageShare('wsg_50_simulation'), 'urdf', 'wsg50.urdf.xacro'])
     
     robot_description_content = Command(
         [
@@ -69,7 +69,7 @@ def generate_launch_description():
     controller_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
-            FindPackageShare('wsg50_simulation'),
+            FindPackageShare('wsg_50_simulation'),
             'launch',
             'wsg50_controller_standalone.launch.py',
             ])

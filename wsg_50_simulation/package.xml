@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>wsg50_simulation</name>
+  <name>wsg_50_simulation</name>
   <version>0.0.1</version>
-  <description>prl_ur5_gazebo provides all the configuration and launch files for using the PRL UR5 robot with the Gazebo simulator</description>
+  <description>wsg_50_simulation provides all the urdf and launch files for using the wsg50 gripper</description>
   <maintainer email="timothee.carecchio@inria.fr">Timothee Carecchio</maintainer>
   <author email="timothee.carecchio@inria.fr">Timothee Carecchio</author>
 

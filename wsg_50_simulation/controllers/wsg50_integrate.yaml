@@ -3,7 +3,7 @@ left_wsg_50_gl:
     type: position_controllers/JointGroupPositionController
 
     joints: 
-      - left_wsg50_base_joint_gripper_left
+      - left_gripper_base_joint_gripper_left
     pid:
       p: 100.0
       d: 10.0
@@ -12,7 +12,7 @@ left_wsg_50_gr:
   ros__parameters:
     type: position_controllers/JointGroupPositionController
     joints: 
-      - left_wsg50_base_joint_gripper_right
+      - left_gripper_base_joint_gripper_right
     pid:
       p: 100.0
       d: 10.0
@@ -22,7 +22,7 @@ right_wsg_50_gl:
     type: position_controllers/JointGroupPositionController
 
     joints: 
-      - right_wsg50_base_joint_gripper_left
+      - right_gripper_base_joint_gripper_left
     pid:
       p: 100.0
       d: 10.0
@@ -31,7 +31,7 @@ right_wsg_50_gr:
   ros__parameters:
     type: position_controllers/JointGroupPositionController
     joints: 
-      - right_wsg50_base_joint_gripper_right
+      - right_gripper_base_joint_gripper_right
     pid:
       p: 100.0
       d: 10.0      
@@ -41,10 +41,10 @@ wsg50_position_controller:
   ros__parameters:
     type: position_controllers/JointGroupPositionController
     joints: 
-      - left_wsg50_base_joint_gripper_right
-      - left_wsg50_base_joint_gripper_left
-      - right_wsg50_base_joint_gripper_right
-      - right_wsg50_base_joint_gripper_left
+      - left_gripper_base_joint_gripper_right
+      - left_gripper_base_joint_gripper_left
+      - right_gripper_base_joint_gripper_right
+      - right_gripper_base_joint_gripper_left
     pid:
       p: 100.0
       d: 10.0
