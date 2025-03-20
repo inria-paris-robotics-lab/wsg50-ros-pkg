@@ -324,7 +324,7 @@
   
   <!-- <gazebo>
       <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-      <parameters>$(find wsg_50_simulation)/controllers/wsg50_driver.yaml</parameters>
+      <parameters>$(find wsg_50_simulation)/controllers/wsg50_standalone.yaml</parameters>
       </plugin>
   </gazebo> -->
 

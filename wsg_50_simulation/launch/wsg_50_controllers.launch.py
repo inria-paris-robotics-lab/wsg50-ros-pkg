@@ -32,7 +32,7 @@ def launch_setup(context):
 
 def generate_launch_description():
     declared_arguments = []
-    # UR specific arguments
+
     declared_arguments.append(
         DeclareLaunchArgument(
             "prefix",
