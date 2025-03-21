@@ -4,7 +4,7 @@
 <!-- finger_length: Length of finger from gripper base. (was 0.023) -->
 <!-- finger_tip:    Offset of finger tip along fingers' motion direction.
                     Use e.g. for single contact point tip on finger. (default 0) -->
-<xacro:macro name="wsg_50_xacro" params="prefix parent finger_length finger_tip *origin">
+<xacro:macro name="wsg_50_xacro" params="prefix parent finger_length finger_tip *origin sim_standalone:=false">
 
 
     <joint name="${prefix}_mounting_plate_joint" type="fixed">
@@ -321,12 +321,14 @@
             </state_interface>
         </joint>
     </ros2_control>
-  
-  <!-- <gazebo>
-      <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-      <parameters>$(find wsg_50_simulation)/controllers/wsg50_standalone.yaml</parameters>
-      </plugin>
-  </gazebo> -->
+
+    <xacro:if value="${sim_standalone}">
+        <gazebo>
+            <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+                <parameters>$(find wsg_50_simulation)/controllers/wsg_50_standalone.yaml</parameters>
+            </plugin>
+        </gazebo>
+    </xacro:if>
 
 </xacro:macro>
 

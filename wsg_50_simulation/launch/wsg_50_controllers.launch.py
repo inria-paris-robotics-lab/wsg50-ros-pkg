@@ -13,18 +13,18 @@ def launch_setup(context):
     # Initialize Arguments
     prefix = LaunchConfiguration('prefix').perform(context)
     
-    wsg50_controller_file=PathJoinSubstitution([FindPackageShare('wsg_50_simulation'),'controllers', 'wsg50_integrate.yaml'])
+    controller_file=LaunchConfiguration('controller_file').perform(context)
 
     right_finger_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=[prefix+"wsg_50_gr", '--param-file', wsg50_controller_file],
+        arguments=[prefix+"wsg_50_gr", '--param-file', controller_file],
     )
 
     left_finger_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=[prefix+"wsg_50_gl", '--param-file', wsg50_controller_file],
+        arguments=[prefix+"wsg_50_gl", '--param-file', controller_file],
     )
 
     return [right_finger_controller_spawner, left_finger_controller_spawner]
@@ -38,6 +38,14 @@ def generate_launch_description():
             "prefix",
             default_value="",
             description="Gripper prefix"
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "controller_file",
+            default_value="",
+            description="Path to the WSG50 controller file"
         )
     )
     
