@@ -66,16 +66,16 @@ typedef struct {
 //------------------------------------------------------------------------
 
 float convert(unsigned char *b);
-int homing( void );
+int homing( bool ignore_response = false );
 int move(float width, float speed, bool stop_on_block, bool ignore_response = false);
 int stop( bool ignore_response = false );
-int grasp( float objWidth, float speed );
-int release( float width, float speed );
-int ack_fault( void );
+int grasp( float objWidth, float speed, bool ignore_response = false);
+int release( float width, float speed, bool ignore_response = false);
+int ack_fault(bool ignore_response = false);
 
-int setAcceleration( float acc );
-int setGraspingForceLimit( float force );
-int doTare( void );
+int setAcceleration( float acc, bool ignore_response = false );
+int setGraspingForceLimit( float force, bool ignore_response = false );
+int doTare( bool ignore_response = false );
 
 const char * systemState( void );
 int graspingState( void );

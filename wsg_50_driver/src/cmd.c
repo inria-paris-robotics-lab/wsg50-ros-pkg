@@ -54,13 +54,11 @@
 #include <string.h>
 #include <assert.h>
 
-#include "wsg_50/common.h"
-#include "wsg_50/msg.h"
-#include "wsg_50/cmd.h"
+#include "wsg_50_driver/common.h"
+#include "wsg_50_driver/msg.h"
+#include "wsg_50_driver/cmd.h"
 
-#include "wsg_50/tcp.h"
-#include "wsg_50/udp.h"
-#include "wsg_50/serial.h"
+#include "wsg_50_driver/tcp.h"
 
 
 //------------------------------------------------------------------------
@@ -220,91 +218,6 @@ int cmd_connect_tcp( const char *addr, unsigned short port )
 	connected = true;
 
 	//printf( "TCP connection established. \n" );
-
-	return 0;
-}
-
-
-/**
- * Open up UDP connection
- *
- * @param local_port		Local port number (for answer)
- * @param *addr				String containing IP address
- * @param remote_port		Remote port number
- *
- * @return 0 on success, else -1
- */
-
-int cmd_connect_udp( unsigned short local_port, const char *addr, unsigned short remote_port )
-{
-	int res;
-	udp_params_t params;
-	const interface_t *iface;
-
-	// IP address string must be given
-	if ( !addr ) return -1;
-
-	// If already connected, return error
-	if ( connected ) return -1;
-
-	// Get interface with the given name
-	iface = interface_get( "udp" );
-	if ( !iface ) return -1;
-
-	// Create parameter struct
-	params.addr = str_to_ipaddr( addr );
-	params.local_port = local_port;
-	params.remote_port = remote_port;
-
-	// Open connection
-	res = msg_open( iface, &params );
-	if ( res < 0 ) return -1;
-
-	// Set connected flag
-	connected = true;
-
-	printf( "UDP connection established\n" );
-
-	return 0;
-}
-
-
-/**
- * Open up serial connection
- *
- * @param *device		Device string
- *
- * @return 0 on success, else -1
- */
-
-int cmd_connect_serial( const char *device, unsigned int bitrate )
-{
-	int res;
-	ser_params_t params;
-	const interface_t *iface;
-
-	// Device parameter must be given
-	if ( !device || bitrate == 0 ) return -1;
-
-	// Set connection parameters
-	params.device = device;
-	params.bitrate = bitrate;
-
-	// If already connected, return error
-	if ( connected ) return -1;
-
-	// Get interface with the given name
-	iface = interface_get( "serial" );
-	if ( !iface ) return -1;
-
-	// Open connection
-	res = msg_open( iface, (void *) &params );
-	if ( res < 0 ) return -1;
-
-	// Set connected flag
-	connected = true;
-
-	printf( "Serial connection established\n" );
 
 	return 0;
 }

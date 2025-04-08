@@ -53,7 +53,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "wsg_50/common.h"
+#include "wsg_50_driver/common.h"
 
 
 //------------------------------------------------------------------------
@@ -173,23 +173,27 @@ void quit( const char *reason )
 
 const char * getStateValues( unsigned char *b ){
 
-	/*
-	unsigned char aux[4]; 
-
 	
-	aux[0] = b[0];
-	aux[1] = b[1];
-	aux[2] = b[2];
-	aux[3] = b[3];
+	// unsigned char aux[4]; 
+	char *resp = (char *) malloc(1024);
+	if (resp == NULL) {
+		dbgPrint("Error allocating memory for response string.\n");
+		return NULL;
+	}
+	resp[0] = '\0'; // Initialize the response string
 	
-	dbgPrint("Dins de getStateValues.\n");
-	dbgPrint("b[2] = 0x%x\n", b[2]);
-	dbgPrint("b[3] = 0x%x\n", b[3]);
-	dbgPrint("b[4] = 0x%x\n", b[4]);
-	dbgPrint("b[5] = 0x%x\n", b[5]);
-	*/
+	// aux[0] = b[0];
+	// aux[1] = b[1];
+	// aux[2] = b[2];
+	// aux[3] = b[3];
 
-	char resp[1024] = "| ";
+	// dbgPrint("Dins de getStateValues.\n");
+	// dbgPrint("b[2] = 0x%x\n", b[2]);
+	// dbgPrint("b[3] = 0x%x\n", b[3]);
+	// dbgPrint("b[4] = 0x%x\n", b[4]);
+	// dbgPrint("b[5] = 0x%x\n", b[5]);
+	
+
 
 	if (b[2] & 0x1){	// D0 ==> LSB
 		//dbgPrint("Fingers Referenced.\n");
@@ -273,7 +277,7 @@ const char * getStateValues( unsigned char *b ){
 		char aux18[17] = " Command Error |";
 		strcat(resp, aux18);
 	}
-     	if (b[4] & 0x8){  // D19
+    if (b[4] & 0x8){  // D19
 		//dbgPrint("A script is currently running.\n");
 		char aux19[33] = " A script is currently running |";
 		strcat(resp, aux19);
@@ -288,7 +292,7 @@ const char * getStateValues( unsigned char *b ){
 	
 	// D31 ==> MSB
 
-	//dbgPrint("%s\n", resp);
+	// dbgPrint("%s\n", resp);
 	return resp;
 }
 

@@ -1,9 +1,9 @@
 //======================================================================
 /**
  *  @file
- *  serial.h
+ *  tcp.h
  *
- *  @section serial.h_general General file information
+ *  @section tcp.h_general General file information
  *
  *  @brief
  *  
@@ -12,7 +12,7 @@
  *  @date	08.07.2011
  *  
  *  
- *  @section serial.h_copyright Copyright
+ *  @section tcp.h_copyright Copyright
  *  
  *  Copyright 2011 Weiss Robotics, D-71636 Ludwigsburg, Germany
  *  
@@ -24,14 +24,32 @@
 //======================================================================
 
 
-#ifndef SERIAL_H_
-#define SERIAL_H_
+#ifndef TCP_H_
+#define TCP_H_
 
 //------------------------------------------------------------------------
 // Includes
 //------------------------------------------------------------------------
 
+#ifdef WIN32
+	// Note: Compiler has to link against -lwsock32 or -lws2_32 on MinGW
+	// @todo Have to adjust some code to make tcp work on MinGW
+	#include "winsock.h"
+	#include "winsock2.h"
+#else
+	#include <unistd.h>
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <sys/ioctl.h>
+	#include <sys/select.h>
+	#include <arpa/inet.h>
+	#include <netinet/in.h>
+	#include <pthread.h>
+#endif
 
+#include "common.h"
+
+static pthread_mutex_t comm_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,29 +66,31 @@ extern "C" {
 
 typedef struct
 {
-	const char *device;
-	unsigned int bitrate;
-} ser_params_t;
+	ip_addr_t addr;
+	unsigned short port;
+} tcp_params_t;
 
 
 typedef struct
 {
-	int fd;
-} ser_conn_t;
+	int sock;
+	struct sockaddr_in si_server;
+	ip_addr_t server;
+} tcp_conn_t;
 
 
 //------------------------------------------------------------------------
 // Function declaration
 //------------------------------------------------------------------------
 
-int serial_open( const void *params );
-void serial_close( void );
-int serial_read( unsigned char *buf, unsigned int len );
-int serial_write( unsigned char *buf, unsigned int len );
+int tcp_open( const void *params );
+void tcp_close( void );
+int tcp_read( unsigned char *buf, unsigned int len );
+int tcp_write( unsigned char *buf, unsigned int len );
 
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SERIAL_H_ */
+#endif /* TCP_H_ */
