@@ -1,6 +1,0 @@
-float32 width
-float32 speed
----
-uint8 result
----
-float32 position

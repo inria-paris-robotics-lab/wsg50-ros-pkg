@@ -55,12 +55,11 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include <std_msgs/msg/string.hpp>
 #include <std_srvs/srv/trigger.hpp>
+
 #include "wsg_50_common/msg/status.hpp"
-#include "wsg_50_common/msg/cmd.hpp"
-#include "wsg_50_common/srv/move.hpp"
 #include "wsg_50_common/srv/conf.hpp"
-#include "wsg_50_common/srv/incr.hpp"
-#include "wsg_50_common/action/move.hpp"
+
+#include "wsg_50_common/action/cmd.hpp"
 
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/bool.hpp"
@@ -68,9 +67,15 @@
 
 
 
-#define GRIPPER_MIN_OPEN 2.0
-# define GRIPPER_MAX_OPEN 110.0
+#define GRIPPER_MIN_OPEN 2.0 // unit: mm
+#define GRIPPER_MAX_OPEN 110.0
+#define GRIPPER_MIN_SPEED 0.0
+#define GRIPPER_MAX_SPEED 420.0
+#define GRIPPER_WIDTH_THRESHOLD 1.0
 
+#define MODE_MOVE 0
+#define MODE_GRASP 1
+#define MODE_RELEASE 2
 
 class WSG50Node : public rclcpp::Node{
     public:
@@ -78,15 +83,14 @@ class WSG50Node : public rclcpp::Node{
             this->declare_parameter<std::string>("ip", "192.168.1.20");
             this->declare_parameter<int>("port", 1000);
             this->declare_parameter<std::string>("protocol", "tcp");
-            this->declare_parameter<std::string>("com_mode", "not_auto");
-            this->declare_parameter<double>("rate", 1.0);
+            // Warning to the user if rate is too low the driver could not work properly !!
+            this->declare_parameter<double>("rate", 100.0);
             this->declare_parameter<double>("grasping_force", 0.0);
             this->declare_parameter<bool>("finger_sensors", false);
 
             this->get_parameter("ip", ip_);
             this->get_parameter("port", port_);
             this->get_parameter("protocol", protocol_);
-            this->get_parameter("com_mode", com_mode_);
             this->get_parameter("rate", rate_);
             this->get_parameter("grasping_force", grasping_force_);
             this->get_parameter("finger_sensors", finger_sensors_);
@@ -94,20 +98,13 @@ class WSG50Node : public rclcpp::Node{
             std::cout << "IP: " << ip_ << std::endl;
             std::cout << "Port: " << port_ << std::endl;
             std::cout << "Protocol: " << protocol_ << std::endl;
-            std::cout << "Communication mode: " << com_mode_ << std::endl;
             std::cout << "Rate: " << rate_ << std::endl;
             std::cout << "Grasping force: " << grasping_force_ << std::endl;
 
-            if (com_mode_ == "script") {
-                this->g_mode_script = true;
-            } else if (com_mode_ == "auto_update") {
-                this->g_mode_periodic = true;
-            } else {
-                this->g_mode_polling = true;
-            }
+            
 
-            RCLCPP_INFO(this->get_logger(), "Connecting to %s:%d (%s); communication mode: %s ...",
-                        ip_.c_str(), port_, protocol_.c_str(), com_mode_.c_str());
+            RCLCPP_INFO(this->get_logger(), "Connecting to %s:%d; communication mode: %s ...",
+                        ip_.c_str(), port_, protocol_.c_str());
             
             int res_con=cmd_connect_tcp(ip_.c_str(), port_);
 
@@ -118,22 +115,12 @@ class WSG50Node : public rclcpp::Node{
             else{
                 RCLCPP_INFO(this->get_logger(), "Connected to WSG-50 gripper.");
 
-                // Subscribers
-                command_sub =  this->create_subscription<wsg_50_common::msg::Cmd>("goal_position", 5, std::bind(&WSG50Node::position_cb, this, std::placeholders::_1));
-                
                 // Publishers
                 g_pub_state = this->create_publisher<wsg_50_common::msg::Status>("status", 1000);
                 g_pub_joint = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
-                if (g_mode_script || g_mode_periodic)
-                    g_pub_moving = this->create_publisher<std_msgs::msg::Bool>("moving", 10);
-
-                
+                g_pub_moving = this->create_publisher<std_msgs::msg::Bool>("moving", 10);
 
                 // Services
-                move_srv_ = this->create_service<wsg_50_common::srv::Move>("move", std::bind(&WSG50Node::moveSrv, this, std::placeholders::_1, std::placeholders::_2));
-                grasp_srv_ = this->create_service<wsg_50_common::srv::Move>("grasp", std::bind(&WSG50Node::graspSrv, this, std::placeholders::_1, std::placeholders::_2));
-                increment_srv_ = this->create_service<wsg_50_common::srv::Incr>("increment", std::bind(&WSG50Node::incrementSrv, this, std::placeholders::_1, std::placeholders::_2));
-                release_srv_ = this->create_service<wsg_50_common::srv::Move>("release", std::bind(&WSG50Node::releaseSrv, this, std::placeholders::_1, std::placeholders::_2));
                 homing_srv_ = this->create_service<std_srvs::srv::Trigger>("homing", std::bind(&WSG50Node::homingSrv, this, std::placeholders::_1, std::placeholders::_2));
                 stop_srv_ = this->create_service<std_srvs::srv::Trigger>("stop", std::bind(&WSG50Node::stopSrv, this, std::placeholders::_1, std::placeholders::_2));
                 set_force_srv_ = this->create_service<wsg_50_common::srv::Conf>("set_force", std::bind(&WSG50Node::setForceSrv, this, std::placeholders::_1, std::placeholders::_2));
@@ -141,9 +128,9 @@ class WSG50Node : public rclcpp::Node{
                 ack_srv_ = this->create_service<std_srvs::srv::Trigger>("ack", std::bind(&WSG50Node::ackSrv, this, std::placeholders::_1, std::placeholders::_2));
 
                 // Actions
-                move_action_server_ = rclcpp_action::create_server<wsg_50_common::action::Move>(
+                move_action_server_ = rclcpp_action::create_server<wsg_50_common::action::Cmd>(
                     this,
-                    "gripper_move",
+                    "wsg_50_cmd",
                     std::bind(&WSG50Node::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
                     std::bind(&WSG50Node::handle_cancel, this, std::placeholders::_1),
                     std::bind(&WSG50Node::handle_accepted, this, std::placeholders::_1));
@@ -174,282 +161,50 @@ class WSG50Node : public rclcpp::Node{
                 }
                 RCLCPP_INFO(this->get_logger(), "Gripper ready.");
 
-                if (g_mode_polling || g_mode_script){
-                    RCLCPP_INFO(this->get_logger(), "Starting timer with rate %f", rate_);
-                    // Create a timer to call the timer_cb function at the specified rate
-                    timer_= this->create_wall_timer(std::chrono::seconds(static_cast<int>(1/rate_)),std::bind(&WSG50Node::timer_cb, this));
-                }
-                if (g_mode_periodic){
-                    auto_update_thread_ = std::thread(std::bind(&WSG50Node::read_thread, this, (int)(1000.0 / rate_)));
-                }
+                auto_update_thread_ = std::thread(std::bind(&WSG50Node::read_thread, this, (int)(1000.0 / rate_)));
 
             }
         }
 
+        ~WSG50Node() {
+            if (auto_update_thread_.joinable()) {
+                auto_update_thread_.join(); // Attend la fin du thread
+            }
+            cmd_disconnect();
+            RCLCPP_INFO(this->get_logger(), "Disconnected from WSG-50 gripper.");
+        }
     private:
-        std::string ip_, protocol_, com_mode_;
+        std::string ip_, protocol_;
         int port_, local_port_;
         double rate_, grasping_force_;
         float increment, g_goal_position = NAN, g_goal_speed = NAN, g_speed = 10.0;
         float current_width_ = 0.0;
-        bool g_ismoving = false, g_mode_script = false, g_mode_periodic = false, g_mode_polling = false, finger_sensors_ = false;
+        bool g_ismoving = false, finger_sensors_ = false;
         bool object_grasped = false;
         rclcpp::TimerBase::SharedPtr timer_;
         std::thread auto_update_thread_;
-
-        // Subscribers
-        rclcpp::Subscription<wsg_50_common::msg::Cmd>::SharedPtr command_sub;
 
         // Publishers
         rclcpp::Publisher<wsg_50_common::msg::Status>::SharedPtr g_pub_state;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr g_pub_joint;
         rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr g_pub_moving;
 
+
         // Services
-        rclcpp::Service<wsg_50_common::srv::Move>::SharedPtr move_srv_;
-        rclcpp::Service<wsg_50_common::srv::Move>::SharedPtr grasp_srv_;
-        rclcpp::Service<wsg_50_common::srv::Incr>::SharedPtr increment_srv_;
-        rclcpp::Service<wsg_50_common::srv::Move>::SharedPtr release_srv_;
         rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr homing_srv_;
         rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr do_tare_srv_;
         rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr stop_srv_;
         rclcpp::Service<wsg_50_common::srv::Conf>::SharedPtr set_force_srv_;
         rclcpp::Service<wsg_50_common::srv::Conf>::SharedPtr set_acc_srv_;
         rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr ack_srv_;
-               
 
         // Actions
-        rclcpp_action::Server<wsg_50_common::action::Move>::SharedPtr move_action_server_;
+        rclcpp_action::Server<wsg_50_common::action::Cmd>::SharedPtr move_action_server_;
         
-
-        rclcpp_action::GoalResponse handle_goal(const rclcpp_action::GoalUUID & uuid,std::shared_ptr<const wsg_50_common::action::Move::Goal> goal){
-            RCLCPP_INFO(this->get_logger(), "Received goal request with width: %f", goal->width);
-            (void)uuid;
-            // Accept the goal
-            return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-        }
-
-        rclcpp_action::CancelResponse handle_cancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<wsg_50_common::action::Move>> goal_handle){
-            RCLCPP_INFO(this->get_logger(), "Received cancel request");
-            // Accept the cancel request
-            (void)goal_handle;
-            stop(g_mode_periodic);
-            return rclcpp_action::CancelResponse::ACCEPT;
-        }
-
-        void handle_accepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<wsg_50_common::action::Move>> goal_handle){
-            using namespace std::placeholders;
-            std::thread{std::bind(&WSG50Node::move_exec, this,_1), goal_handle}.detach();
-        }
-
-     
-        void move_exec(const std::shared_ptr<rclcpp_action::ServerGoalHandle<wsg_50_common::action::Move>> goal_handle){
-            auto goal = goal_handle->get_goal();
-            auto feedback = std::make_shared<wsg_50_common::action::Move::Feedback>();
-            auto result = std::make_shared<wsg_50_common::action::Move::Result>();
-
-            // Move the gripper to the desired position
-            RCLCPP_INFO(this->get_logger(), "Start moving gripper to width: %f", goal->width);
-            int error = move(goal->width, goal->speed, false, g_mode_periodic);
-            std::cout<<g_ismoving<<std::endl;
-            while (g_ismoving){
-                std::cout << "Moving gripper to width: " << goal->width << std::endl;
-                if (goal_handle->is_canceling()) {
-                    result->result = false;
-                    RCLCPP_INFO(this->get_logger(), "Goal canceled");
-                    goal_handle->canceled(result);
-                    return;
-                }
-                // Update feedback
-                feedback->position = current_width_;
-                goal_handle->publish_feedback(feedback);
-            }
-            
-            if (rclcpp::ok()) {
-                if (error == 0) {
-                    result->result = true;
-                    RCLCPP_INFO(this->get_logger(), "Gripper moved successfully");
-                } else {
-                    result->result = false;
-                    RCLCPP_ERROR(this->get_logger(), "Error while moving gripper");
-                }
-                goal_handle->succeed(result);
-            }
-           
-        }
-
-
-        void position_cb(const wsg_50_common::msg::Cmd::SharedPtr msg) {
-            g_speed = msg->speed; g_goal_position = msg->pos;
-            // timer_cb() will send command to gripper
-
-            if (g_mode_periodic) {
-                // Send command to gripper without waiting for a response
-                // read_thread() handles responses
-                // read/write may be simultaneous, therefore no mutex
-                stop(true);
-                if (move(g_goal_position, g_speed, false, true) != 0)
-                    RCLCPP_ERROR(this->get_logger(), "Failed to send command to gripper.");
-            }
-        }
-
-        void speed_cb(const std_msgs::msg::Float32::SharedPtr msg) {
-            if (msg->data < 0.0 || msg->data > 420.0) {
-                RCLCPP_ERROR(this->get_logger(), "Speed value out of range (0.0 - 420.0)");
-                return;
-            }
-            g_speed = msg->data;
-            g_goal_speed = msg->data;
-        }
-
-        void moveSrv(const std::shared_ptr<wsg_50_common::srv::Move::Request> req,std::shared_ptr<wsg_50_common::srv::Move::Response> res){
-            RCLCPP_INFO(this->get_logger(), "Received move command: width=%f, speed=%f",req->width, req->speed);
-            if((req->width >=GRIPPER_MIN_OPEN && req->width <=GRIPPER_MAX_OPEN) && (req->speed >0.0 && req->speed <=420.0)){
-                RCLCPP_INFO(this->get_logger(), "Moving gripper to width %f with speed %f", req->width, req->speed);
-                res->error = move(req->width, req->speed, false, g_mode_periodic);
-                if (res->error == 0){
-                    RCLCPP_INFO(this->get_logger(), "Target position reached");
-                }
-                else{
-                    RCLCPP_ERROR(this->get_logger(), "Error while moving gripper");
-                }
-            }
-            else if (req->width < GRIPPER_MIN_OPEN || req->width > GRIPPER_MAX_OPEN){
-                RCLCPP_ERROR(this->get_logger(), "Imposible to move to this position. (Width values: [0.0 - 110.0]");
-                res->error = 255;
-            }
-            else{
-                RCLCPP_ERROR(this->get_logger(), "Speed values are outside the gripper's physical limits (Speed values: [0.0 - 420.0]");
-                res->error = 255;
-            }
-        }
-
-        void graspSrv(const std::shared_ptr<wsg_50_common::srv::Move::Request> req,std::shared_ptr<wsg_50_common::srv::Move::Response> res){
-            RCLCPP_INFO(this->get_logger(), "Received grasp command: width=%f, speed=%f",req->width, req->speed);
-            if((req->width >=GRIPPER_MIN_OPEN && req->width <=GRIPPER_MAX_OPEN) && (req->speed >0.0 && req->speed <=420.0)){
-                RCLCPP_INFO(this->get_logger(), "Grasping object of size %f at %f mm/s", req->width, req->speed);
-                res->error = grasp(req->width, req->speed, g_mode_periodic);
-                if (res->error == 0){
-                    RCLCPP_INFO(this->get_logger(), "Object grasped with force %f", grasping_force_);
-                    object_grasped = true;
-                }
-                else{
-                    RCLCPP_ERROR(this->get_logger(), "Error while grasping object");
-                    object_grasped = false;
-                }
-            }
-            else if (req->width < GRIPPER_MIN_OPEN || req->width > GRIPPER_MAX_OPEN){
-                RCLCPP_ERROR(this->get_logger(), "Imposible to move to this position. (Width values: [0.0 - 110.0]");
-                res->error = 255;
-            }
-            else{
-                RCLCPP_ERROR(this->get_logger(), "Speed values are outside the gripper's physical limits (Speed values: [0.0 - 420.0]");
-                res->error = 255;
-            }
-        }
-
-        void incrementSrv(const std::shared_ptr<wsg_50_common::srv::Incr::Request> req,std::shared_ptr<wsg_50_common::srv::Incr::Response> res){
-            RCLCPP_INFO(this->get_logger(), "Received increment command: direction=%s, increment=%f",req->direction.c_str(), req->increment);
-            if (req->direction=="open"){
-                float current_width = getOpening();
-                float next_width = current_width + req->increment;
-                if ((current_width < GRIPPER_MAX_OPEN) && (next_width <= GRIPPER_MAX_OPEN)){
-                    RCLCPP_INFO(this->get_logger(), "Opening gripper to %f", next_width);
-                    res->error=move(next_width, 20, true,g_mode_periodic);
-                    if (res->error == 0){
-                        RCLCPP_INFO(this->get_logger(), "Gripper opened to %f", next_width);
-                    }
-                    else{
-                        RCLCPP_ERROR(this->get_logger(), "Error while opening gripper");
-                    }
-                }
-                else {
-                    RCLCPP_ERROR(this->get_logger(), "Gripper max position outpassed");
-                    res->error=move(GRIPPER_MAX_OPEN, 1, true,g_mode_periodic);
-                    if (res->error == 0){
-                        RCLCPP_INFO(this->get_logger(), "Gripper opened to %f", GRIPPER_MAX_OPEN);
-                    }
-                    else{
-                        RCLCPP_ERROR(this->get_logger(), "Error while opening gripper");
-                    }
-                }
-                if(object_grasped){
-                    RCLCPP_INFO(this->get_logger(), "Object released");
-                    object_grasped = false;
-                }
-            }
-            else if (req->direction=="close"){
-                if (!object_grasped){
-                    float current_width = getOpening();
-                    float next_width = current_width - req->increment;
-                    if ((current_width > GRIPPER_MIN_OPEN) && (next_width >= GRIPPER_MIN_OPEN)){
-                        RCLCPP_INFO(this->get_logger(), "Closing gripper to %f", next_width);
-                        res->error=move(next_width, 20, true, g_mode_periodic);
-                        if (res->error == 0){
-                            RCLCPP_INFO(this->get_logger(), "Gripper closed to %f", next_width);
-                        }
-                        else{
-                            RCLCPP_ERROR(this->get_logger(), "Error while closing gripper");
-                        }
-                    }
-                    else if (next_width < GRIPPER_MIN_OPEN){
-                        RCLCPP_ERROR(this->get_logger(), "Gripper min position outpassed");
-                        res->error=move(GRIPPER_MIN_OPEN, 1, true, g_mode_periodic);
-                        if (res->error == 0){
-                            RCLCPP_INFO(this->get_logger(), "Gripper closed to %f", GRIPPER_MIN_OPEN);
-                        }
-                        else{
-                            RCLCPP_ERROR(this->get_logger(), "Error while closing gripper");
-                        }
-                    }
-                }
-                else{
-                    RCLCPP_ERROR(this->get_logger(), "Object grasped, impossible to close gripper");
-                    res->error = 255;
-                }
-            }
-            else{
-                RCLCPP_ERROR(this->get_logger(), "Direction values are not supported. (Direction values: [open, close]");
-                res->error = 255;
-            }
-        }
-        
-        void releaseSrv(const std::shared_ptr<wsg_50_common::srv::Move::Request> req,std::shared_ptr<wsg_50_common::srv::Move::Response> res){
-            RCLCPP_INFO(this->get_logger(), "Received release command: width=%f, speed=%f",req->width, req->speed);
-            float current_width= getOpening();
-            if (object_grasped){
-                if (current_width < req->width){
-                    if ((req->width>=GRIPPER_MIN_OPEN && req->width<=GRIPPER_MAX_OPEN) && (req->speed>0.0 && req->speed<=420.0)){
-                        RCLCPP_INFO(this->get_logger(), "Releasing object of width %f at %f mm/s", req->width, req->speed);
-                        res->error = release(req->width, req->speed, g_mode_periodic);
-                        object_grasped = false;
-                        RCLCPP_INFO(this->get_logger(), "Object released");
-                        
-                    }
-                    else if (req->width < GRIPPER_MIN_OPEN || req->width > GRIPPER_MAX_OPEN){
-                        RCLCPP_ERROR(this->get_logger(), "Imposible to move to this position. (Width values: [0.0 - 110.0]");
-                        res->error = 255;
-                    }
-                    else{
-                        RCLCPP_ERROR(this->get_logger(), "Speed values are outside the gripper's physical limits (Speed values: [0.0 - 420.0]");
-                        res->error = 255;
-                    }
-                }
-                else{
-                    RCLCPP_ERROR(this->get_logger(), "Release width is less or equal than current width");
-                    res->error = 255;
-                }
-            }
-            else{
-                RCLCPP_ERROR(this->get_logger(), "Object is not grasped, impossible to release object");
-                res->error = 255;
-            }
-            
-        }
-        void homingSrv(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,const std::shared_ptr<std_srvs::srv::Trigger::Response> res){
+        void homingSrv(const std::shared_ptr<std_srvs::srv::Trigger::Request> /*req*/,const std::shared_ptr<std_srvs::srv::Trigger::Response> res){
             RCLCPP_INFO(this->get_logger(), "Received homing command");
             RCLCPP_INFO(this->get_logger(), "Homing gripper...");
-            res->success=homing(g_mode_periodic);
+            res->success=homing(true);
             if(res->success==0){
                 RCLCPP_INFO(this->get_logger(), "Homing completed");
                 res->message="Homing completed";
@@ -459,10 +214,11 @@ class WSG50Node : public rclcpp::Node{
                 res->success="Homing failed";
             }
         }
-        void doTareSrv(const std::shared_ptr<std_srvs::srv::Trigger::Request> req, const std::shared_ptr<std_srvs::srv::Trigger::Response> res){
+        // revoir do tare marche pas 
+        void doTareSrv(const std::shared_ptr<std_srvs::srv::Trigger::Request> /*req*/, const std::shared_ptr<std_srvs::srv::Trigger::Response> res){
             RCLCPP_INFO(this->get_logger(), "Received tare command");
             RCLCPP_INFO(this->get_logger(), "Taring gripper...");
-            res->success=doTare(g_mode_periodic);
+            res->success=doTare(true);
             if(res->success==0){
                 RCLCPP_INFO(this->get_logger(), "Taring completed");
                 res->message="Taring completed";
@@ -474,10 +230,10 @@ class WSG50Node : public rclcpp::Node{
         }
 
         // revoir
-        void stopSrv(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,const std::shared_ptr<std_srvs::srv::Trigger::Response> res){
+        void stopSrv(const std::shared_ptr<std_srvs::srv::Trigger::Request> /*req*/,const std::shared_ptr<std_srvs::srv::Trigger::Response> res){
             RCLCPP_INFO(this->get_logger(), "Received stop command");
             RCLCPP_INFO(this->get_logger(), "Stopping gripper...");
-            res->success=stop(g_mode_periodic);
+            res->success=stop(true);
             if(res->success==0){
                 RCLCPP_INFO(this->get_logger(), "Gripper stopped");
                 res->message="Gripper stopped";
@@ -492,7 +248,7 @@ class WSG50Node : public rclcpp::Node{
             RCLCPP_INFO(this->get_logger(), "Received set force command");
             if(req->val>0.0 && req->val<=80.0){
                 RCLCPP_INFO(this->get_logger(), "Setting grasping force to %f", req->val);
-                res->error=setGraspingForceLimit(req->val,g_mode_periodic);
+                res->error=setGraspingForceLimit(req->val,true);
                 if(res->error == 0){
                     RCLCPP_INFO(this->get_logger(), "Grasping force set to %f", req->val);
                     grasping_force_ = req->val;
@@ -511,7 +267,7 @@ class WSG50Node : public rclcpp::Node{
             RCLCPP_INFO(this->get_logger(), "Received set acceleration command");
             if (req->val>100.0 && req->val<=5000.0){
                 RCLCPP_INFO(this->get_logger(), "Setting acceleration to %f", req->val);
-                res->error=setAcceleration(req->val,g_mode_periodic);
+                res->error=setAcceleration(req->val,true);
                 if(res->error == 0){
                     RCLCPP_INFO(this->get_logger(), "Acceleration set to %f", req->val);
                 }
@@ -525,9 +281,9 @@ class WSG50Node : public rclcpp::Node{
             }
         }
 
-        void ackSrv(const std::shared_ptr<std_srvs::srv::Trigger::Request> req,const std::shared_ptr<std_srvs::srv::Trigger::Response> res){
+        void ackSrv(const std::shared_ptr<std_srvs::srv::Trigger::Request> /*req*/,const std::shared_ptr<std_srvs::srv::Trigger::Response> res){
             RCLCPP_INFO(this->get_logger(), "Received ack command");
-            res->success=ack_fault(g_mode_periodic);
+            res->success=ack_fault(true);
             if(res->success==0){
                 RCLCPP_INFO(this->get_logger(), "Ack completed");
                 res->message="Ack completed";
@@ -537,71 +293,134 @@ class WSG50Node : public rclcpp::Node{
                 res->success="Ack failed";
             }
         }
-        
 
-        void timer_cb(){
-            // ==== Get state values by built-in commands ====
-            gripper_response info;
-            float acc = 0.0;
-            info.speed = 0.0;
-            if (g_mode_polling) {
-                const char * state = systemState();
-                if (!state) {
-                    RCLCPP_ERROR(this->get_logger(), "Échec de la récupération de l'état");
+        rclcpp_action::GoalResponse handle_goal(const rclcpp_action::GoalUUID & uuid,std::shared_ptr<const wsg_50_common::action::Cmd::Goal> goal){
+            // Check if the goal is valid
+            if(goal->mode<0 || goal->mode>2){
+                RCLCPP_ERROR(this->get_logger(), "Invalid command: %d. Must be 0 (move), 1 (grasp) or 2 (release)", goal->mode);
+                return rclcpp_action::GoalResponse::REJECT;
+            }
+            // Check if the width is within the valid range
+            if(goal->width < GRIPPER_MIN_OPEN || goal->width > GRIPPER_MAX_OPEN){
+                RCLCPP_ERROR(this->get_logger(), "Invalid width: %f. Must be between %f and %f", goal->width, GRIPPER_MIN_OPEN, GRIPPER_MAX_OPEN);
+                return rclcpp_action::GoalResponse::REJECT;
+            }
+            // Check if the speed is within the valid range
+            if(goal->speed <= GRIPPER_MIN_SPEED || goal->speed > GRIPPER_MAX_SPEED){
+                RCLCPP_ERROR(this->get_logger(), "Invalid speed: %f. Must be between %f and %f", goal->speed, GRIPPER_MIN_SPEED, GRIPPER_MAX_SPEED);
+                return rclcpp_action::GoalResponse::REJECT;
+            }
+            // Accept the goal
+            RCLCPP_INFO(this->get_logger(), "Received command request");
+            (void)uuid;
+            return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+        }
+
+        rclcpp_action::CancelResponse handle_cancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<wsg_50_common::action::Cmd>> goal_handle){
+            RCLCPP_INFO(this->get_logger(), "Received cancel request");
+            // Accept the cancel request
+            (void)goal_handle;
+            stop(true);
+            return rclcpp_action::CancelResponse::ACCEPT;
+        }
+
+        void handle_accepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<wsg_50_common::action::Cmd>> goal_handle){
+            using namespace std::placeholders;
+            std::thread{std::bind(&WSG50Node::move_exec, this,_1), goal_handle}.detach();
+        }
+
+     
+        void move_exec(const std::shared_ptr<rclcpp_action::ServerGoalHandle<wsg_50_common::action::Cmd>> goal_handle){
+            auto goal = goal_handle->get_goal();
+            auto feedback = std::make_shared<wsg_50_common::action::Cmd::Feedback>();
+            auto result = std::make_shared<wsg_50_common::action::Cmd::Result>();
+            int error = -1;
+            switch (goal->mode){
+                case MODE_MOVE:
+                    RCLCPP_INFO(this->get_logger(), "Moving gripper to width: %f at speed: %f", goal->width, goal->speed);
+                    error = move(goal->width, goal->speed, false, true);
+                    break;
+                case MODE_GRASP:
+                    RCLCPP_INFO(this->get_logger(), "Grasping object with width: %f at speed: %f", goal->width, goal->speed);
+                    error = grasp(goal->width, goal->speed, true);
+                    break;
+                case MODE_RELEASE:
+                    RCLCPP_INFO(this->get_logger(), "Releasing object with width: %f at speed: %f", goal->width, goal->speed);
+                    error = release(goal->width, goal->speed, true);
+                    break;
+                default:
+                    RCLCPP_ERROR(this->get_logger(), "Invalid command: %d. Must be 0 (move), 1 (grasp) or 2 (release)", goal->mode);
+                    result->result = false;
+                    goal_handle->abort(result);
+                    return;
+            }
+            // Update feedback during the movement and handle cancel requests
+            while (g_ismoving){
+                if (goal_handle->is_canceling()) {
+                    result->result = false;
+                    RCLCPP_INFO(this->get_logger(), "Goal canceled");
+                    goal_handle->canceled(result);
+                    RCLCPP_INFO(this->get_logger(), "Goal cancel confirmation sent");
                     return;
                 }
-                info.state_text = std::string(state);
-                free((void*)state);
-                info.position = getOpening();
-                acc = getAcceleration();
-                info.f_motor = getForce();
-            } 
-
-            // ==== Status msg ====
-            wsg_50_common::msg::Status status_msg;
-            status_msg.status = info.state_text;
-            status_msg.width = info.position;
-            status_msg.speed = info.speed;
-            status_msg.acc = acc;
-            status_msg.force = info.f_motor;
-            status_msg.force_finger0 = info.f_finger0;
-            status_msg.force_finger1 = info.f_finger1;
-            
-            g_pub_state->publish(status_msg);
-
-            
-
-            // ==== Joint state msg ====
-            // \todo Use name of node for joint names
-            sensor_msgs::msg::JointState joint_states;
-            joint_states.header.stamp = rclcpp::Clock().now();
-            joint_states.header.frame_id = "wsg50_base_link";
-            joint_states.name.push_back("wsg50_finger_left_joint");
-            joint_states.name.push_back("wsg50_finger_right_joint");
-            joint_states.position.resize(2);
-
-            joint_states.position[0] = -info.position/2000.0;
-            joint_states.position[1] = info.position/2000.0;
-            joint_states.velocity.resize(2);
-            joint_states.velocity[0] = info.speed/1000.0;
-            joint_states.velocity[1] = info.speed/1000.0;
-            joint_states.effort.resize(2);
-            joint_states.effort[0] = info.f_motor;
-            joint_states.effort[1] = info.f_motor;
-
-            g_pub_joint->publish(joint_states);
-
-            // printf("Timer, last duration: %6.1f\n", ev.profile.last_duration.toSec() * 1000.0);
+                // Update feedback
+                feedback->position = current_width_;
+                goal_handle->publish_feedback(feedback);
+            }
+            // Check the result of the movement
+            if (rclcpp::ok()) {
+                if (error<0){
+                    result->result = false;
+                    RCLCPP_ERROR(this->get_logger(), "Fail to send command to gripper");
+                    goal_handle->abort(result);
+                }
+                switch (goal->mode){
+                    case MODE_MOVE:
+                        if (goal->width >= current_width_ - GRIPPER_WIDTH_THRESHOLD && goal->width <= current_width_ + GRIPPER_WIDTH_THRESHOLD){
+                            result->result = true;
+                        }
+                        else{
+                            result->result = false;
+                        }
+                        break;
+                    case MODE_GRASP:
+                        if (object_grasped){
+                            result->result = true;
+                        }
+                        else{
+                            result->result = false;
+                        }
+                        break;
+                    case MODE_RELEASE:
+                        if (!object_grasped){
+                            result->result = true;
+                        }
+                        else{
+                            result->result = false;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                if (result->result){
+                   goal_handle->succeed(result);
+                }
+                else{
+                    goal_handle->abort(result);
+                }
+            }
+           
         }
+
+
         /** \brief Reads gripper responses in auto_update mode. The gripper pushes state messages in regular intervals. */
         void read_thread(int interval_ms){
             RCLCPP_INFO(this->get_logger(), "Starting read thread with interval %d ms", interval_ms);
 
             status_t status;
             int res;
-            bool pub_state = false;
 
-            double rate_exp = 1000.0 / (double)interval_ms;
+            // double rate_exp = 1000.0 / (double)interval_ms;
             std::string names[3] = { "opening", "speed", "force" };
 
             // Prepare messages
@@ -626,7 +445,7 @@ class WSG50Node : public rclcpp::Node{
             auto time_start = std::chrono::system_clock::now();
 
 
-            while (g_mode_periodic) {
+            while (rclcpp::ok()) {
                 // Receive gripper response
                 msg_free(&msg);
                 res = msg_receive( &msg );
@@ -653,7 +472,6 @@ class WSG50Node : public rclcpp::Node{
                 /*** Opening ***/
                 case 0x43:
                     status_msg.width = val;
-                    pub_state = true;
                     cnt[0]++;
                     break;
 
@@ -674,15 +492,19 @@ class WSG50Node : public rclcpp::Node{
                     if (status == E_SUCCESS) {
                         RCLCPP_INFO(this->get_logger(), "Homing completed");
                         status_msg.status = "Homing completed";
+                        motion = 0;
                     } else if (status == E_CMD_PENDING) {
                         RCLCPP_INFO(this->get_logger(), "Homing in progress");
                         status_msg.status = "Homing in progress";
+                        motion = 1;
                     } else if (status == E_CMD_ABORTED) {
                         RCLCPP_ERROR(this->get_logger(), "Homing aborted");
                         status_msg.status = "Homing aborted";
+                        motion = 0;
                     } else {
                         RCLCPP_ERROR(this->get_logger(), "Homing error");
                         status_msg.status = "Homing error";
+                        motion = 0;
                     }
                     break;
                 /*** Move ***/
@@ -698,6 +520,9 @@ class WSG50Node : public rclcpp::Node{
                         motion = 0;
                     } else if (status == E_CMD_PENDING) {
                         RCLCPP_INFO(this->get_logger(), "Gripper moving");
+                        if(object_grasped){
+                            object_grasped = false;
+                        }
                         status_msg.status = "Gripper moving";
                         motion = 1;
                     } else if (status == E_ALREADY_RUNNING) {
@@ -905,16 +730,15 @@ class WSG50Node : public rclcpp::Node{
 
             }
 
-            // Disable automatic updates
-            // TODO: The functions will receive an unexpected response
-            getOpening(0);
-            getSpeed(0);
-            getForce(0);
+            // // Disable automatic updates
+            // // TODO: The functions will receive an unexpected response
+            // getOpening(0);
+            // getSpeed(0);
+            // getForce(0);
 
             RCLCPP_INFO(this->get_logger(), "Thread ended");
         }
 
-         
 };
 
 
@@ -927,10 +751,8 @@ int main( int argc, char **argv )
 {
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<WSG50Node>());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Shutting down WSG-50 node...");
     rclcpp::shutdown();
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Shutting down WSG-50 node.");
-    // Close the connection to the gripper
-    cmd_disconnect();
     return 0;
 }
 
