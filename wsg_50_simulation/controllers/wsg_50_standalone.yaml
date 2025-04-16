@@ -11,8 +11,12 @@ controller_manager:
     wsg_50_gr:
       type: position_controllers/JointGroupPositionController
     
-    position_controller:
+    controller:
       type: position_controllers/JointGroupPositionController
+    
+    gripper_controller:
+      type: position_controllers/GripperActionController
+
 
 wsg_50_gl:
   ros__parameters:
@@ -30,12 +34,19 @@ wsg_50_gr:
       p: 100.0
       d: 10.0
 
-position_controller:
+controller:
   ros__parameters:
-    joints: 
-      - wsg50_base_joint_gripper_right
-      - wsg50_base_joint_gripper_left
-    pid:
-      p: 100.0
-      d: 10.0
+    joints:
+      - wsg50_width_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
 
+gripper_controller:
+  ros__parameters:
+    action_monitor_rate: 500.0
+    allow_stalling: false
+    goal_tolerance: 0.002
+    joint: wsg50_width_joint
+    max_effort: 0.0

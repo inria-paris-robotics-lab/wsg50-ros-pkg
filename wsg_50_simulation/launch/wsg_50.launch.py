@@ -29,12 +29,20 @@ def launch_setup(context):
   launch_rviz = LaunchConfiguration('launch_rviz')
   # URDF file
   description_file = PathJoinSubstitution([FindPackageShare('wsg_50_simulation'), 'urdf', 'wsg50.urdf.xacro'])
+  # rviz 
+  rviz_config_file = PathJoinSubstitution([FindPackageShare('wsg_50_simulation'),'rviz','wsg50.rviz'])
   # Robot description
   robot_description_content = Command(
       [
           PathJoinSubstitution([FindExecutable(name='xacro')]),
           ' ',
           description_file,
+          " ",
+          "real_hardware:=",
+          "false ",
+          " ",
+          "sim_standalone:=",
+          "true ",
           " ",
       ]
   )
@@ -53,6 +61,7 @@ def launch_setup(context):
       name="rviz2",
       output="log",
       condition=IfCondition(launch_rviz),
+      arguments=["-d", rviz_config_file],
   )
   # Gazebo
   gazebo_launch = IncludeLaunchDescription( 
@@ -63,7 +72,7 @@ def launch_setup(context):
         'gz_sim.launch.py',
       ])
     ]),
-    launch_arguments={'gz_args': '-r -v 4 empty.sdf'}.items()
+    launch_arguments={'gz_args': '-r -v 4 empty.sdf '}.items(),
   )
   # Spawn gripper in Gazebo
   spawn_gripper = Node(
@@ -92,9 +101,16 @@ def launch_setup(context):
           'wsg_50_controllers.launch.py',
           ])
       ]),
-      launch_arguments={'prefix': "", 'controller_file': PathJoinSubstitution([FindPackageShare('wsg_50_simulation'), 'controllers', 'wsg_50_standalone.yaml'])}.items()
+      launch_arguments={'prefix': "", 'controller_file': PathJoinSubstitution([FindPackageShare('wsg_50_simulation'), 'controllers', 'wsg_50_standalone.yaml']), 'standalone': "true"}.items()
   )
-  return [node_robot_state_publisher, rviz, gazebo_launch, spawn_gripper, gz_sim_bridge, controller_launch]
+  return [
+    node_robot_state_publisher, 
+    rviz, 
+    gazebo_launch, 
+    spawn_gripper, 
+    gz_sim_bridge, 
+    controller_launch
+    ]
 
 def generate_launch_description():
   declared_arguments = []

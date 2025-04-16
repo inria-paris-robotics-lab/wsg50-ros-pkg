@@ -85,7 +85,7 @@ class WSG50Node : public rclcpp::Node{
             this->declare_parameter<std::string>("protocol", "tcp");
             // Warning to the user if rate is too low the driver could not work properly !!
             this->declare_parameter<double>("rate", 100.0);
-            this->declare_parameter<double>("grasping_force", 0.0);
+            this->declare_parameter<double>("grasping_force", 5.0);
             this->declare_parameter<bool>("finger_sensors", false);
 
             this->get_parameter("ip", ip_);
@@ -428,12 +428,16 @@ class WSG50Node : public rclcpp::Node{
             status_msg.status = "UNKNOWN";
 
             sensor_msgs::msg::JointState joint_states;
-            joint_states.header.frame_id = "wsg50_base_link";
-            joint_states.name.push_back("wsg50_finger_left_joint");
-            joint_states.name.push_back("wsg50_finger_right_joint");
-            joint_states.position.resize(2);
-            joint_states.velocity.resize(2);
-            joint_states.effort.resize(2);
+            // joint_states.header.frame_id = "wsg50_base_link";
+            // joint_states.name.push_back("wsg50_base_joint_gripper_left");
+            // joint_states.name.push_back("wsg50_base_joint_gripper_right");
+            // joint_states.position.resize(2);
+            // joint_states.velocity.resize(2);
+            // joint_states.effort.resize(2);
+            joint_states.name.push_back("wsg50_width_joint");
+            joint_states.position.resize(1);
+            joint_states.velocity.resize(1);
+            joint_states.effort.resize(1);
 
             // Request automatic updates (error checking is done below)
             getOpening(interval_ms);
@@ -701,12 +705,15 @@ class WSG50Node : public rclcpp::Node{
                 current_width_ = status_msg.width;
 
                 joint_states.header.stamp = rclcpp::Clock().now();
-                joint_states.position[0] = -status_msg.width/2000.0;
-                joint_states.position[1] = status_msg.width/2000.0;
+                // joint_states.position[0] = status_msg.width/2000.0;
+                // joint_states.position[1] = status_msg.width/2000.0;
+                // joint_states.velocity[0] = status_msg.speed/1000.0;
+                // joint_states.velocity[1] = status_msg.speed/1000.0;
+                // joint_states.effort[0] = status_msg.force;
+                // joint_states.effort[1] = status_msg.force;
+                joint_states.position[0] = status_msg.width/1000.0;
                 joint_states.velocity[0] = status_msg.speed/1000.0;
-                joint_states.velocity[1] = status_msg.speed/1000.0;
                 joint_states.effort[0] = status_msg.force;
-                joint_states.effort[1] = status_msg.force;
                 g_pub_joint->publish(joint_states);
 
                 // Check # of received messages regularly

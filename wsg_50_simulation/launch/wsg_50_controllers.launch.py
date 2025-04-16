@@ -12,23 +12,26 @@ from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.substitutions import FindPackageShare
+from launch.conditions import IfCondition
 
 def launch_setup(context):
     # Arguments
     prefix = LaunchConfiguration('prefix').perform(context)
     controller_file=LaunchConfiguration('controller_file').perform(context)
+    standalone=LaunchConfiguration('standalone').perform(context)
     # Controller spawner
-    right_finger_controller_spawner = Node(
+    joint_state_broadcatser = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=[prefix+"wsg_50_gr", '--param-file', controller_file],
+        arguments=["joint_state_broadcaster"],
+        condition=IfCondition(standalone),
     )
-    left_finger_controller_spawner = Node(
+    width_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
-        arguments=[prefix+"wsg_50_gl", '--param-file', controller_file],
+        arguments=[prefix+"gripper_controller", '--param-file', controller_file],
     )
-    return [right_finger_controller_spawner, left_finger_controller_spawner]
+    return [joint_state_broadcatser, width_controller_spawner]
 
 def generate_launch_description():
     declared_arguments = []
@@ -44,6 +47,13 @@ def generate_launch_description():
             "controller_file",
             default_value="",
             description="Path to the WSG50 controller file"
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "standalone",
+            default_value="false",
+            description="If true, the gripper will be launched in standalone mode. If false, the gripper will be launched in a robot setup."
         )
     )
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])

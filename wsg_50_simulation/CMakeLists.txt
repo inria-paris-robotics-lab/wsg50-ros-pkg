@@ -4,7 +4,7 @@ project(wsg_50_simulation)
 find_package(ament_cmake REQUIRED)
 
 install(
-  DIRECTORY launch urdf controllers meshes
+  DIRECTORY launch urdf controllers meshes rviz
   DESTINATION share/${PROJECT_NAME}
 )
 
