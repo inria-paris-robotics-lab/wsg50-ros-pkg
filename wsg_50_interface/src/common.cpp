@@ -53,7 +53,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "wsg_50_control/common.h"
+#include "wsg_50_interface/common.h"
 
 
 //------------------------------------------------------------------------
@@ -98,7 +98,7 @@ ip_addr_t str_to_ipaddr( const char *str )
 	unsigned int i, res;
 	unsigned int buf[4];
 	ip_addr_t addr = 0;
-	res = sscanf( str, "%d.%d.%d.%d", &buf[3], &buf[2], &buf[1], &buf[0] );
+	res = sscanf( str, "%u.%u.%u.%u", &buf[3], &buf[2], &buf[1], &buf[0] );
 	if ( res != 4 ) return( 0 );
 	for ( i = 0; i < 4; i++ )
 	{
@@ -173,23 +173,27 @@ void quit( const char *reason )
 
 const char * getStateValues( unsigned char *b ){
 
-	/*
-	unsigned char aux[4]; 
-
 	
-	aux[0] = b[0];
-	aux[1] = b[1];
-	aux[2] = b[2];
-	aux[3] = b[3];
+	// unsigned char aux[4]; 
+	char *resp = (char *) malloc(1024);
+	if (resp == NULL) {
+		dbgPrint("Error allocating memory for response string.\n");
+		return NULL;
+	}
+	resp[0] = '\0'; // Initialize the response string
 	
-	dbgPrint("Dins de getStateValues.\n");
-	dbgPrint("b[2] = 0x%x\n", b[2]);
-	dbgPrint("b[3] = 0x%x\n", b[3]);
-	dbgPrint("b[4] = 0x%x\n", b[4]);
-	dbgPrint("b[5] = 0x%x\n", b[5]);
-	*/
+	// aux[0] = b[0];
+	// aux[1] = b[1];
+	// aux[2] = b[2];
+	// aux[3] = b[3];
 
-	char resp[1024] = "| ";
+	// dbgPrint("Dins de getStateValues.\n");
+	// dbgPrint("b[2] = 0x%x\n", b[2]);
+	// dbgPrint("b[3] = 0x%x\n", b[3]);
+	// dbgPrint("b[4] = 0x%x\n", b[4]);
+	// dbgPrint("b[5] = 0x%x\n", b[5]);
+	
+
 
 	if (b[2] & 0x1){	// D0 ==> LSB
 		//dbgPrint("Fingers Referenced.\n");
@@ -288,7 +292,7 @@ const char * getStateValues( unsigned char *b ){
 	
 	// D31 ==> MSB
 
-	//dbgPrint("%s\n", resp);
+	// dbgPrint("%s\n", resp);
 	return resp;
 }
 

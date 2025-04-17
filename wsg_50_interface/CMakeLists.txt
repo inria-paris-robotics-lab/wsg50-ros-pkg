@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(wsg_50_control)
+project(wsg_50_interface)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -24,15 +24,17 @@ include_directories(
 
 # Source files
 set(SOURCES
-  src/wsg_controller.cpp include/wsg_50_control/wsg_controller.hpp
+  src/wsg_ros_interface.cpp include/wsg_50_interface/wsg_ros_interface.hpp
   src/wsg_50.cpp
-  src/checksum.cpp include/wsg_50_control/checksum.h
-  src/cmd.c include/wsg_50_control/cmd.h
-  src/common.cpp include/wsg_50_control/common.h
-  src/functions.cpp include/wsg_50_control/functions.h
-  src/interface.cpp include/wsg_50_control/interface.h
-  src/msg.c include/wsg_50_control/msg.h
-  src/tcp.c include/wsg_50_control/tcp.h
+  src/checksum.cpp include/wsg_50_interface/checksum.h
+  src/cmd.c include/wsg_50_interface/cmd.h
+  src/common.cpp include/wsg_50_interface/common.h
+  src/functions.cpp include/wsg_50_interface/functions.h
+  src/interface.cpp include/wsg_50_interface/interface.h
+  src/msg.c include/wsg_50_interface/msg.h
+  src/tcp.c include/wsg_50_interface/tcp.h
+  src/udp.c include/wsg_50_interface/udp.h
+  src/serial.c include/wsg_50_interface/serial.h
 )
 
 # Library for the hardware interface
@@ -48,7 +50,7 @@ ament_target_dependencies(${PROJECT_NAME}
 )
 
 # Export the plugin
-pluginlib_export_plugin_description_file(hardware_interface wsg_hardware.xml)
+pluginlib_export_plugin_description_file(hardware_interface wsg_50_hardware.xml)
 
 # Install headers
 install(DIRECTORY include/

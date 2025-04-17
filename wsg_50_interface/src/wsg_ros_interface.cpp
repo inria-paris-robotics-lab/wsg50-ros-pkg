@@ -1,5 +1,5 @@
-#include <wsg_50_control/wsg_controller.hpp>
-namespace wsg_50_control
+#include <wsg_50_interface/wsg_ros_interface.hpp>
+namespace wsg_50_interface
 {
 
 WSG50HardwareInterface::WSG50HardwareInterface()
@@ -124,7 +124,7 @@ hardware_interface::return_type WSG50HardwareInterface::write(const rclcpp::Time
 }
 
 #include "pluginlib/class_list_macros.hpp"
-PLUGINLIB_EXPORT_CLASS(wsg_50_control::WSG50HardwareInterface, hardware_interface::SystemInterface)
+PLUGINLIB_EXPORT_CLASS(wsg_50_interface::WSG50HardwareInterface, hardware_interface::SystemInterface)
 
 
-}// namespace wsg_50_control
+}// namespace wsg_50_interface

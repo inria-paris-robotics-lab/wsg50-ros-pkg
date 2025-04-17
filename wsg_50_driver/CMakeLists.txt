@@ -25,6 +25,8 @@ set(DRIVER_SOURCES
   src/main.cpp
   src/msg.c include/wsg_50_driver/msg.h
   src/tcp.c include/wsg_50_driver/tcp.h
+  src/udp.c include/wsg_50_driver/udp.h
+  src/serial.c include/wsg_50_driver/serial.h
 )
 include_directories(
   include

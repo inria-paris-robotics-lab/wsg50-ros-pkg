@@ -81,6 +81,8 @@ const interface_t tcp =
 };
 
 static tcp_conn_t conn;
+static pthread_mutex_t comm_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 
 
 //------------------------------------------------------------------------

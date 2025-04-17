@@ -1,4 +1,4 @@
-#include "wsg_50_control/wsg_50.hpp"
+#include "wsg_50_interface/wsg_50.hpp"
 #include <rclcpp/rclcpp.hpp>
 
 

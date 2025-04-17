@@ -1,18 +1,18 @@
 //======================================================================
 /**
  *  @file
- *  tcp.h
+ *  cmd.h
  *
- *  @section tcp.h_general General file information
+ *  @section cmd.h_general General file information
  *
  *  @brief
- *  
+ *  Command abstraction layer (Header file)
  *
  *  @author wolfer
- *  @date	08.07.2011
+ *  @date	20.07.2011
  *  
  *  
- *  @section tcp.h_copyright Copyright
+ *  @section cmd.h_copyright Copyright
  *  
  *  Copyright 2011 Weiss Robotics, D-71636 Ludwigsburg, Germany
  *  
@@ -24,29 +24,20 @@
 //======================================================================
 
 
-#ifndef TCP_H_
-#define TCP_H_
+#ifndef CMD_H_
+#define CMD_H_
 
 //------------------------------------------------------------------------
 // Includes
 //------------------------------------------------------------------------
 
-#ifdef WIN32
-	// Note: Compiler has to link against -lwsock32 or -lws2_32 on MinGW
-	// @todo Have to adjust some code to make tcp work on MinGW
-	#include "winsock.h"
-	#include "winsock2.h"
-#else
-	#include <unistd.h>
-	#include <sys/types.h>
-	#include <sys/socket.h>
-	#include <sys/ioctl.h>
-	#include <sys/select.h>
-	#include <arpa/inet.h>
-	#include <netinet/in.h>
-#endif
-
 #include "common.h"
+
+
+//------------------------------------------------------------------------
+// Macros
+//------------------------------------------------------------------------
+
 
 
 #ifdef __cplusplus
@@ -54,41 +45,33 @@ extern "C" {
 #endif
 
 //------------------------------------------------------------------------
-// Macros
-//------------------------------------------------------------------------
-
-
-//------------------------------------------------------------------------
 // Typedefs, enums, structs
 //------------------------------------------------------------------------
 
-typedef struct
-{
-	ip_addr_t addr;
-	unsigned short port;
-} tcp_params_t;
 
-
-typedef struct
-{
-	int sock;
-	struct sockaddr_in si_server;
-	ip_addr_t server;
-} tcp_conn_t;
+//------------------------------------------------------------------------
+// Global variables
+//------------------------------------------------------------------------
 
 
 //------------------------------------------------------------------------
 // Function declaration
 //------------------------------------------------------------------------
 
-int tcp_open( const void *params );
-void tcp_close( void );
-int tcp_read( unsigned char *buf, unsigned int len );
-int tcp_write( unsigned char *buf, unsigned int len );
+int cmd_connect_tcp( const char *addr, unsigned short port );
+int cmd_connect_udp( unsigned short local_port, const char *addr, unsigned short remote_port );
+int cmd_connect_serial( const char *device, unsigned int bitrate );
+
+void cmd_disconnect( void );
+bool cmd_is_connected( void );
+status_t cmd_get_response_status( unsigned char *response );
+
+int cmd_submit( unsigned char id, unsigned char *payload, unsigned int len,
+			    bool pending, unsigned char **response, unsigned int *response_len );
 
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* TCP_H_ */
+#endif /* CMD_H_ */

@@ -1,18 +1,18 @@
 //======================================================================
 /**
  *  @file
- *  interface.c
+ *  tcp.c
  *
- *  @section interface.c_general General file information
+ *  @section tcp.c_general General file information
  *
  *  @brief
  *  
  *
  *  @author wolfer
- *  @date	07.07.2011
+ *  @date	08.07.2011
  *  
  *  
- *  @section interface.c_copyright Copyright
+ *  @section tcp.c_copyright Copyright
  *  
  *  Copyright 2011 Weiss Robotics, D-71636 Ludwigsburg, Germany
  *  
@@ -49,19 +49,18 @@
 //------------------------------------------------------------------------
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "wsg_50_control/common.h"
-#include "wsg_50_control/interface.h"
-
-// Available interfaces
-#include "wsg_50_control/tcp.h"
+#include "wsg_50_interface/interface.h"
+#include "wsg_50_interface/tcp.h"
 
 
 //------------------------------------------------------------------------
 // Macros
 //------------------------------------------------------------------------
 
+#define TCP_RCV_TIMEOUT_SEC					60
 
 //------------------------------------------------------------------------
 // Typedefs, enums, structs
@@ -72,15 +71,17 @@
 // Global variables
 //------------------------------------------------------------------------
 
-// Interface structs
-extern const interface_t tcp;
-
-// Collection of interfaces, NULL terminated
-static const interface_t *interfaces[] =
+const interface_t tcp =
 {
-	&tcp,
-	NULL
+	.name = "tcp",
+	.open = &tcp_open,
+	.close = &tcp_close,
+	.read = &tcp_read,
+	.write = &tcp_write
 };
+
+static tcp_conn_t conn;
+static pthread_mutex_t comm_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 //------------------------------------------------------------------------
@@ -98,24 +99,111 @@ static const interface_t *interfaces[] =
 //------------------------------------------------------------------------
 
 /**
- * Get interface with the given name
+ * Open TCP socket
  *
- * @param *name		Interface name string
+ * @param *params		Connection parameters
  *
- * @return Pointer to interface struct
+ * @return 0 on success, else -1
  */
 
-const interface_t * interface_get( const char *name )
+int tcp_open( const void *params )
 {
-	unsigned int i = 0;
+	int res;
+	tcp_params_t *tcp = (tcp_params_t *) params;
 
-	while ( interfaces[i] != NULL )
+	conn.server = tcp->addr;
+
+	conn.sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
+	if( conn.sock < 0 )
 	{
-		if ( strcmp( name, interfaces[i]->name ) == 0 ) return interfaces[i];
-		i++;
+		fprintf( stderr, "Cannot open TCP socket\n" );
+		return -1;
 	}
 
-	return NULL;
+    memset( (char *) &conn.si_server, 0, sizeof(conn.si_server) );
+    conn.si_server.sin_family = AF_INET;
+    conn.si_server.sin_port = htons( tcp->port );
+    conn.si_server.sin_addr.s_addr = tcp->addr;
+
+	unsigned int val = 1024;
+    setsockopt( conn.sock, SOL_SOCKET, SO_RCVBUF, (void *) &val, (socklen_t) sizeof( val ) );
+
+    struct timeval timeout = { .tv_sec = TCP_RCV_TIMEOUT_SEC, .tv_usec = 0 };
+    setsockopt( conn.sock, SOL_SOCKET, SO_RCVTIMEO, (void *) &timeout, (socklen_t) sizeof( struct timeval ) );
+
+    res = connect( conn.sock, (struct sockaddr *) &conn.si_server, sizeof(conn.si_server) );
+    if ( res < 0 ) return -1;
+
+    return 0;
+}
+
+
+/**
+ * Close TCP socket
+ *
+ * @return 0
+ */
+
+void tcp_close( void )
+{
+	close( conn.sock );
+	conn.sock = 0;
+}
+
+
+/**
+ * Read character from TCP socket
+ *
+ * @return Character read
+ */
+
+int tcp_read( unsigned char *buf, unsigned int len )
+{
+    int res;
+
+    if ( conn.sock <= 0 || buf == NULL ) return -1;
+    if ( len == 0 ) return 0;
+	// Wait for communication mutex
+	pthread_mutex_lock(&comm_mutex);
+	// Read desired number of bytes
+	res = recv( conn.sock, buf, len, 0 );
+	// Release communication mutex
+	pthread_mutex_unlock(&comm_mutex);
+	if ( res < 0 )
+	{
+		close( conn.sock );
+		quit( "Failed to read data from TCP socket\n" );
+	}
+
+    return res;
+}
+
+
+/**
+ * Write to TCP socket
+ *
+ * @param *buf		Pointer to buffer that holds data to be sent
+ * @param len		Number of bytes to send
+ *
+ * @return 0 if successful, -1 on failure
+ */
+
+int tcp_write( unsigned char *buf, unsigned int len )
+{
+    int res;
+
+	if ( conn.sock <= 0 ) return( -1 );
+	// Wait for communication mutex
+	pthread_mutex_lock(&comm_mutex);
+	res = send( conn.sock, buf, len, 0 );
+	// Release communication mutex
+	pthread_mutex_unlock(&comm_mutex);
+    if ( res >= 0 ) return( res );
+    else
+    {
+    	fprintf( stderr, "Failed to send data using TCP socket\n" );
+    	return -1;
+    }
 }
 
 

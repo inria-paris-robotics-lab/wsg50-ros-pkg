@@ -56,6 +56,8 @@
 
 // Available interfaces
 #include "wsg_50_driver/tcp.h"
+#include "wsg_50_driver/udp.h"
+#include "wsg_50_driver/serial.h"
 
 
 //------------------------------------------------------------------------
@@ -74,11 +76,15 @@
 
 // Interface structs
 extern const interface_t tcp;
+extern const interface_t udp;
+extern const interface_t serial;
 
 // Collection of interfaces, NULL terminated
 static const interface_t *interfaces[] =
 {
 	&tcp,
+	&udp,
+	&serial,
 	NULL
 };
 

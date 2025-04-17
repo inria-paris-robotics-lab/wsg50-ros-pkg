@@ -1,0 +1,9 @@
+<library path="wsg_50_interface">
+  <class name="wsg_50_interface::WSG50HardwareInterface"
+         type="wsg_50_interface::WSG50HardwareInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      Hardware interface for the WSG 50 gripper.
+    </description>
+  </class>
+</library>

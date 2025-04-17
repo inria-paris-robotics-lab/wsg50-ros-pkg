@@ -304,7 +304,7 @@ void msg_close( void )
 void msg_free( msg_t *msg )
 {
 	if ( msg->data ) free( msg->data );
-	memset( msg, 0, sizeof( msg ) );
+	memset(msg, 0, sizeof(*msg)); 
 }
 
 

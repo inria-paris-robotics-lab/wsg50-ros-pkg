@@ -82,31 +82,27 @@ class WSG50Node : public rclcpp::Node{
         WSG50Node():Node("wsg_50"){
             this->declare_parameter<std::string>("ip", "192.168.1.20");
             this->declare_parameter<int>("port", 1000);
+            this->declare_parameter<int>("local_port", 1501);
             this->declare_parameter<std::string>("protocol", "tcp");
-            // Warning to the user if rate is too low the driver could not work properly !!
-            this->declare_parameter<double>("rate", 100.0);
+            this->declare_parameter<double>("rate", 100.0); // Warning to the user if rate is too low the driver could not work properly !!
             this->declare_parameter<double>("grasping_force", 5.0);
             this->declare_parameter<bool>("finger_sensors", false);
 
             this->get_parameter("ip", ip_);
             this->get_parameter("port", port_);
+            this->get_parameter("local_port", local_port_);
             this->get_parameter("protocol", protocol_);
             this->get_parameter("rate", rate_);
             this->get_parameter("grasping_force", grasping_force_);
             this->get_parameter("finger_sensors", finger_sensors_);
 
-            std::cout << "IP: " << ip_ << std::endl;
-            std::cout << "Port: " << port_ << std::endl;
-            std::cout << "Protocol: " << protocol_ << std::endl;
-            std::cout << "Rate: " << rate_ << std::endl;
-            std::cout << "Grasping force: " << grasping_force_ << std::endl;
+            RCLCPP_INFO(this->get_logger(), "\nConnecting to %s:%d\nCommunication mode: %s\nRate: %f Hz\nGrasping Force: %f",ip_.c_str(), port_, protocol_.c_str(), rate_, grasping_force_);
 
-            
-
-            RCLCPP_INFO(this->get_logger(), "Connecting to %s:%d; communication mode: %s ...",
-                        ip_.c_str(), port_, protocol_.c_str());
-            
-            int res_con=cmd_connect_tcp(ip_.c_str(), port_);
+            int res_con;
+            if (protocol_ == "udp")
+                res_con = cmd_connect_udp(local_port_, ip_.c_str(), port_);
+            else
+                res_con = cmd_connect_tcp( ip_.c_str(), port_ );
 
             if (res_con!=0){
                 RCLCPP_ERROR(this->get_logger(), "Unable to connect, please check the port and address used.");
@@ -114,6 +110,9 @@ class WSG50Node : public rclcpp::Node{
             }
             else{
                 RCLCPP_INFO(this->get_logger(), "Connected to WSG-50 gripper.");
+                std::string link = "\033[4;34mhttp://" + ip_ + "\033[0m";  // Bleu + souligné
+
+                RCLCPP_INFO(this->get_logger(), "Gripper web interface: %s", link.c_str());
 
                 // Publishers
                 g_pub_state = this->create_publisher<wsg_50_common::msg::Status>("status", 1000);
@@ -151,13 +150,23 @@ class WSG50Node : public rclcpp::Node{
                 rclcpp::sleep_for(std::chrono::milliseconds(500));  // Pause de 5 secondes
                 if (this->finger_sensors_){
                     RCLCPP_INFO(this->get_logger(), "Taring gripper...");
-                    doTare();
+                    if(doTare()==0){
+                        RCLCPP_INFO(this->get_logger(), "Gripper tared.");
+                    }
+                    else{
+                        RCLCPP_ERROR(this->get_logger(), "Error while taring gripper");
+                    }
                     do_tare_srv_ = this->create_service<std_srvs::srv::Trigger>("do_tare", std::bind(&WSG50Node::doTareSrv, this, std::placeholders::_1, std::placeholders::_2));
                 }
 
                 if (grasping_force_ > 0.0) {
                     RCLCPP_INFO(this->get_logger(), "Setting grasping force limit to %f", grasping_force_);
-                    setGraspingForceLimit(grasping_force_);
+                    if(setGraspingForceLimit(grasping_force_)==0){
+                        RCLCPP_INFO(this->get_logger(), "Grasping force limit set to %f", grasping_force_);
+                    }
+                    else{
+                        RCLCPP_ERROR(this->get_logger(), "Error while setting grasping force limit");
+                    }
                 }
                 RCLCPP_INFO(this->get_logger(), "Gripper ready.");
 
@@ -428,12 +437,6 @@ class WSG50Node : public rclcpp::Node{
             status_msg.status = "UNKNOWN";
 
             sensor_msgs::msg::JointState joint_states;
-            // joint_states.header.frame_id = "wsg50_base_link";
-            // joint_states.name.push_back("wsg50_base_joint_gripper_left");
-            // joint_states.name.push_back("wsg50_base_joint_gripper_right");
-            // joint_states.position.resize(2);
-            // joint_states.velocity.resize(2);
-            // joint_states.effort.resize(2);
             joint_states.name.push_back("wsg50_width_joint");
             joint_states.position.resize(1);
             joint_states.velocity.resize(1);
@@ -737,11 +740,11 @@ class WSG50Node : public rclcpp::Node{
 
             }
 
-            // // Disable automatic updates
-            // // TODO: The functions will receive an unexpected response
-            // getOpening(0);
-            // getSpeed(0);
-            // getForce(0);
+            // Disable automatic updates
+            // TODO: The functions will receive an unexpected response
+            getOpening(0);
+            getSpeed(0);
+            getForce(0);
 
             RCLCPP_INFO(this->get_logger(), "Thread ended");
         }

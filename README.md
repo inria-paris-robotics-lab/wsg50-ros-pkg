@@ -1,7 +1,8 @@
 # ROS package for Schunk WSG-50 Gripper
-Forked from: [https://code.google.com/p/wsg50-ros-pkg](https://code.google.com/p/wsg50-ros-pkg)
+Forked from: [https://github.com/nalt/wsg50-ros-pkg](https://github.com/nalt/wsg50-ros-pkg)
 
 Modifications of this repository:
+ajout d'un driver ros2 
 Reading back state with high rates, open-loop control via topics, catkinized, modifications for hydro.
 Existing features are not discussed here - see original Wiki: [https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50](https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50)
 

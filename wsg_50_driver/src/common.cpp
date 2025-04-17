@@ -98,7 +98,7 @@ ip_addr_t str_to_ipaddr( const char *str )
 	unsigned int i, res;
 	unsigned int buf[4];
 	ip_addr_t addr = 0;
-	res = sscanf( str, "%d.%d.%d.%d", &buf[3], &buf[2], &buf[1], &buf[0] );
+	res = sscanf( str, "%u.%u.%u.%u", &buf[3], &buf[2], &buf[1], &buf[0] );
 	if ( res != 4 ) return( 0 );
 	for ( i = 0; i < 4; i++ )
 	{

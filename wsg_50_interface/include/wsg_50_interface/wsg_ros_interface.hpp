@@ -1,5 +1,5 @@
-#ifndef WSG_50_CONTROLLER_HPP
-#define WSG_50_CONTROLLER_HPP
+#ifndef WSG_50_INTERFACE_HPP
+#define WSG_50_INTERFACE_HPP
 #include "rclcpp/rclcpp.hpp"
 
 
@@ -12,9 +12,9 @@
 #include <class_loader/class_loader.hpp>
 
 
-#include "wsg_50_control/wsg_50.hpp"
+#include "wsg_50_interface/wsg_50.hpp"
 
-namespace wsg_50_control
+namespace wsg_50_interface
 {
 
 class WSG50HardwareInterface : public hardware_interface::SystemInterface
@@ -43,5 +43,5 @@ private:
 };
 }
 
-#endif  // WSG_50_CONTROLLER_HPP
+#endif  // WSG_50_INTERFACE_HPP
 
