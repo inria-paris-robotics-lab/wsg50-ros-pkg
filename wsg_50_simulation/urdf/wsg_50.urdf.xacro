@@ -4,8 +4,7 @@
 <!-- finger_length: Length of finger from gripper base. (was 0.023) -->
 <!-- finger_tip:    Offset of finger tip along fingers' motion direction.
                     Use e.g. for single contact point tip on finger. (default 0) -->
-<xacro:macro name="wsg_50_xacro" params="prefix parent finger_length finger_tip *origin sim_standalone:=false real_hardware:=false finger_type:='classic'">
-
+<xacro:macro name="wsg_50_xacro" params="prefix parent finger_length finger_tip *origin sim_standalone:=false real_hardware:=false finger_type:='classic' config_file:=${xacro.load_yaml('$(find wsg_50_driver)/config/wsg50_setup.yaml')}">
 
     <joint name="${prefix}_mounting_plate_joint" type="fixed">
         <xacro:insert_block name="origin"/>
@@ -349,15 +348,15 @@
         <xacro:if value="${real_hardware}">
             <hardware>
                 <plugin>wsg_50_interface::WSG50HardwareInterface</plugin>
-                <param name="gripper_name">wsg</param>
-                <param name="ip_address">192.168.1.20</param>
-                <param name="port">1000</param>
-                <param name="protocol">tcp</param>
-                <param name="local_port">1501</param>
-                <param name="rate">100.0</param>
-                <param name="grasping_force">10.0</param>
-                <param name="speed">20.</param>
-                <param name="finger_sensors">true</param>
+                <param name="gripper_name">${config_file.get('name')}</param>
+                <param name="ip_address">${config_file.get('ip_address')}</param>
+                <param name="port">${config_file.get('port')}</param>
+                <param name="protocol">${config_file.get('protocol')}</param>
+                <param name="local_port">${config_file.get('local_port')}</param>
+                <param name="rate">${config_file.get('rate')}</param>
+                <param name="grasping_force">${config_file.get('grasping_force')}</param>
+                <param name="speed">${config_file.get('speed')}</param>
+                <param name="finger_sensors">${config_file.get('finger_sensors')}</param>
             </hardware>
             <joint name="${prefix}_width_joint">
                 <command_interface name="position"/>

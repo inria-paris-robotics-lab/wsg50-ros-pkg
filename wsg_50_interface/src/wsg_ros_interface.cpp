@@ -28,7 +28,7 @@ namespace wsg_50_interface
     if (wsg_.protocol_ == "udp")
     {
       wsg_.local_port_ = std::stoi(info.hardware_parameters.at("local_port"));
-      RCLCPP_INFO(rclcpp::get_logger("WSG50HardwareInterface"), "\nGripper name: %s  \nGripper IP: %s  \nGripper port: %d \nGripper local port: %d \nGripper Protocol: UDP \nGripper rate: %f  \nGripper grasping force: %f", wsg_.name_.c_str(), wsg_.ip_.c_str(), wsg_.port_, wsg_.local_port_, wsg_.rate_, wsg_.grasping_force_);
+      RCLCPP_INFO(rclcpp::get_logger("WSG50HardwareInterface"), "\nGripper joint name: %s  \nGripper IP: %s  \nGripper port: %d \nGripper local port: %d \nGripper Protocol: UDP \nGripper rate: %f  \nGripper grasping force: %f\nFingers sensor: %s", wsg_.name_.c_str(), wsg_.ip_.c_str(), wsg_.port_, wsg_.local_port_, wsg_.rate_, wsg_.grasping_force_, wsg_.finger_sensors_ ? "Enabled" : "Disabled");
     }
     else
     {
@@ -37,7 +37,7 @@ namespace wsg_50_interface
         RCLCPP_ERROR(rclcpp::get_logger("WSG50HardwareInterface"), "Invalid protocol specified. Use 'tcp' or 'udp'.");
         return hardware_interface::CallbackReturn::ERROR;
       }
-      RCLCPP_INFO(rclcpp::get_logger("WSG50HardwareInterface"), "\nGripper name: %s  \nGripper IP: %s  \nGripper port: %d \nGripper Protocol: TCP \nGripper rate: %f  \nGripper grasping force: %f", wsg_.name_.c_str(), wsg_.ip_.c_str(), wsg_.port_, wsg_.rate_, wsg_.grasping_force_);
+      RCLCPP_INFO(rclcpp::get_logger("WSG50HardwareInterface"), "\nGripper joint name: %s  \nGripper IP: %s  \nGripper port: %d \nGripper Protocol: TCP \nGripper rate: %f  \nGripper grasping force: %f\nFingers sensor: %s", wsg_.name_.c_str(), wsg_.ip_.c_str(), wsg_.port_, wsg_.rate_, wsg_.grasping_force_, wsg_.finger_sensors_ ? "Enabled" : "Disabled");
     }
     return hardware_interface::CallbackReturn::SUCCESS;
   }
