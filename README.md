@@ -1,60 +1,170 @@
-# ROS package for Schunk WSG-50 Gripper
+# ROS Package for Schunk WSG-50 Gripper
+
 Forked from: [https://github.com/nalt/wsg50-ros-pkg](https://github.com/nalt/wsg50-ros-pkg)
 
-Modifications of this repository:
-ajout d'un driver ros2 
-Reading back state with high rates, open-loop control via topics, catkinized, modifications for hydro.
-Existing features are not discussed here - see original Wiki: [https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50](https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50)
+<div align="center">
+    <img src="doc/wsg.png" alt="Schunk WSG-50 Gripper">
+</div>
 
-Todo: Restructure code
+## Overview of Updates in this Repository
+
+This repository introduces a complete redesign of the WSG-50 gripper driver to align with ROS 2 standards, ensuring better integration, improved robustness, and modernized communication mechanisms.
 
 
-## Node wsg\_50\_ip (was: wsg\_50_tcp)
+## Installation
+Follow the steps below to set up packages.
+
+Clone the prl repository into your ROS 2 workspace:
+```bash
+cd ~/ws/src
+git clone git@github.com:inria-paris-robotics-lab/wsg50-ros-pkg.git
+```
+
+After you had installed all dependencies you can build every packages with 'colcon':
+```bash
+cd ~/ws
+colcon build --symlink-install 
+```
+
+## Usage
+**Note**: The following instructions are intended for standalone usage of the gripper.
+### Simulate hardware
+---
+
+Below are instructions for standalone use of the WSG-50 gripper:
+
+#### Visualize the URDF File
+To visualize the URDF file of the WSG-50 gripper, use the following command:
+```bash
+ros2 launch wsg_50_simulation view_wsg50.launch.py
+```
+#### Launch Simulation
+To simulate the WSG-50 gripper in a standalone environment, use:
+```bash
+ros2 launch wsg_50_simulation wsg_50.launch.py
+```
+
+#### Launch the ROS 2 Node Driver with a Real Gripper
+To connect and control a real WSG-50 gripper, launch the ROS 2 node driver:
+```bash
+ros2 launch wsg_50_driver wsg_50_driver.launch.py ip:=<gripper_ip> port:=<gripper_port>
+```
+### Real Hardware
+---
+
+The following parameters are declared in the driver and can be customized as needed to match your gripper's configuration:
+
+- **`ip`**: The IP address of the gripper. Default: `"192.168.1.20"`.
+- **`port`**: The port number used to communicate with the gripper. Default: `1000`.
+- **`local_port`**: The local port on the host machine for outgoing communication. Default: `1501`.
+- **`protocol`**: The communication protocol. Default: `"tcp"`.
+- **`rate`**: The update rate in Hz for communication with the gripper. Default: `100.0`.  
+    *Warning*: If the rate is too low, the driver may not function properly.
+- **`grasping_force`**: The maximum force (in Newtons) applied when grasping an object. Default: `5.0`.
+- **`finger_sensors`**: Enables or disables the gripper's finger sensors. Default: `false`.
+
+Ensure these parameters are correctly set to optimize the gripper's performance and compatibility with your setup.
+
+#### Launch Visualization and Control with ROS 2 Control
+To visualize and control the gripper using ROS 2 Control, launch the following:
+```bash
+ros2 launch wsg_50_driver wsg_50_control.launch.py
+```
+
+## ROS 2 Control Integration
+
+A new hardware interface (`WSG50HardwareInterface`) has been implemented, enabling seamless integration with ROS 2 Control. Key features include:
+
+- **State Interfaces**: Publish real-time gripper data (position, speed, force).
+- **Command Interfaces**: Allow asynchronous control of the gripper's target position.
+
+### Core Methods
+- **on_init**: Initializes the gripper using parameters from the URDF.
+- **on_activate**: Connects and configures the gripper for use.
+- **export_state_interfaces**: Exposes state variables (position, speed, force) to ROS 2 Control.
+- **export_command_interfaces**: Exposes command variables (target position).
+- **write**: Sends commands to the gripper, determining the mode (`grasp` or `release`) based on the target position.
+
+---
+
+## Node: `wsg_50_driver`
 
 ### Parameters
-* *ip*: IP address of gripper
-* *port*: Port of gripper
-* *local_port*: Local port for UDP
-* *protocol*: udp or tcp (default)
-* *com_mode*: polling (default), script or auto_update. See communication modes below.
-* *rate*: Polling rate in Hz.
-* *grasping_force*: Set grasping force limit on startup
-
-
-### Services
-See [https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50](https://code.google.com/p/wsg50-ros-pkg/wiki/wsg_50). Services currently block the reception of state updates.
+- `ip`: Gripper's IP address.
+- `port`: Gripper's port.
+- `protocol`: Communication protocol.
+- `rate`: Update rate in Hz.
+- `grasping_force`: Force limit for grasping.
 
 ### Topics
-* *~/goal\_position [IN, wsg_50_common/Cmd]*, in modes script, auto_update:<br/>
-Position goal; send target position in mm and speed
-* *~/goal\_speed [IN, std_msgs/Float32]*, in mode script:<br/>
-Velocity goal (in mm/s); positive values open the gripper
-* *~/moving [OUT, std_msgs/Bool]*, in modes script, auto_update:<br/>
-Signals a change in the motion state for position control. Can be used to wait for the end of a gripper movement. Does not work correctly yet for velocity control, since the gripper state register does not directly provide this information.
-* *~/state [OUT, std_msgs/State]:*<br/>
-State information (opening width, speed, forces). Note: Not all fields are available with all communication modes.
-* */joint_states [OUT, sensor_msgs/JointState]:*<br/>
-Standard joint state message
 
+- `/state`: Gripper state (position, speed, force).
+- `/joint_states`: Standard joint state message.
+- `/moving`: Indicates if the gripper is in motion.
 
-### Communication modes (closed-loop control)
-Select by *com_mode* parameter.
+### Services
+- `set_force`, `set_acc`: Adjust force or acceleration.
+- `homing`, `do_tare`, `stop`, `ack`: Configuration and error recovery.
 
-* **Polling**<br />
-Gripper state is polled regularly using built-in commands (original implementaion). Service calls (e.g. move) block polling as long as the gripper moves. The topic interface is not available. Up to 15 Hz could be reached with the WSG-50 hardware revision 2.
+### Action Server: `/gripper_cmd`
 
-* **Script**<br />
-Allows for closed-loop control with a custom script (see below) that supports up to 2 FMF finger. Gripper state is read synchronously with the specified rate. Up to 30 Hz could be reached with the WSG-50 hardware revision 2. The gripper can be controlled asynchronously by sending position or velocity goals to the topics listed above. Commands will be sent with the next read command in the timer callback timer_cb().<br />
-The service interface can still be used - yet, they are blocking the gripper communication. There are no state updates while the gripper is moved by a service. 
+The action server `/gripper_cmd` is the primary interface for controlling the WSG-50 gripper. It supports the following commands:
 
-* **Auto_update**<br>
-Requests periodic updates of the gripper state (position, speed, force; less data than with the script). Up to 140 Hz could be reached with the WSG-50 hardware revision 2. All responses of the gripper must be received by a reading thread which also publishes the ROS messages. Therefore, most commands in functions.cpp cannot be used. Position targets are sent asynchronously to the gripper using the built-in commands.<br />
-The services are disabled.
+- **Move**: Moves the gripper to a specified position.
+- **Grasp**: Grasps an object with a specified force.
+- **Release**: Releases the object and opens the gripper.
 
-#### Gripper script
-The script *cmd_measure.lua* must be running on the gripper for the script mode. It allows for non-blocking position and velocity control and responds with the current position, speed, motor force and up to two FMF finger forces. The custom commands 0xB0 (read only), 0xB1 (read, goal position and speed), 0xB2 (read, goal speed) are used. Tested with firmware version 2.6.4. There have been minor API changes since 1.x.
+#### Action Definition
+The action server uses a custom action definition with the following structure:
 
+- **Goal**:
+    - `mode` (int): Command mode: 0: Move, 1: Grasp, 2: Release
+    - `position` (float): Target position for the gripper in millimeters.
+    - `speed` (float): Speed of movement in millimeters per second.
 
-## Node wsg\_50_can
+- **Feedback**:
+    - `position` (float): Current position of the gripper.
 
-Remains unchanged; new features not implemented here. 
+- **Result**:
+    - `result` (bool): Indicates whether the command was successfully executed.
+
+---
+
+## ROS 2 Control Interface Configuration
+
+Below is an example configuration for integrating the WSG-50 gripper with ROS 2 Control in a URDF file:
+
+```xml
+<hardware>
+    <plugin>wsg_50_interface::WSG50HardwareInterface</plugin>
+    <param name="gripper_name">wsg</param>
+    <param name="ip_address">192.168.1.20</param>
+    <param name="port">1000</param>
+    <param name="protocol">tcp</param>
+    <param name="local_port">1501</param>
+    <param name="rate">100.0</param>
+    <param name="grasping_force">10.0</param>
+    <param name="speed">20.</param>
+    <param name="finger_sensors">true</param>
+</hardware>
+<joint name="${prefix}_width_joint">
+    <command_interface name="position"/>
+    <state_interface name="position"/>
+    <state_interface name="velocity"/>
+    <state_interface name="effort"/>
+</joint>
+```
+
+### Explanation of Configuration Parameters
+
+- `plugin`: Specifies the hardware interface plugin to use. In this case, it’s the `WSG50HardwareInterface`, which provides the necessary functionality to control the WSG-50 gripper.
+- `gripper_name`: A user-defined name for the gripper. This is used to identify the gripper in the system.
+- `ip_address`: The IP address of the WSG-50 gripper. This is used to establish a connection with the gripper over the network.
+- `port`: The port number on the gripper to which the system connects. The default port for the WSG-50 is typically `1000`.
+- `protocol`: Specifies the communication protocol. The WSG-50 gripper uses `TCP` (Transmission Control Protocol) for reliable communication.
+- `local_port`: The local port on the host machine used for the connection. This is optional and can be used to specify a fixed port for outgoing communication.
+- `rate`: The update rate in Hz for communication with the gripper. This determines how frequently the system sends commands and receives feedback.
+- `grasping_force`: The maximum force (in Newtons) that the gripper will apply when grasping an object. This helps prevent damage to delicate objects.
+- `speed`: The speed (in mm/s) at which the gripper moves. This controls how quickly the gripper opens or closes.
+- `finger_sensors`: A boolean value indicating whether the gripper’s finger sensors are enabled. These sensors can provide more precise effort feedback.
+

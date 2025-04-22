@@ -17,7 +17,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/Conf.srv"
   "srv/Incr.srv"
   "srv/Move.srv"
-  "srv/Grasp.srv"
   "action/Cmd.action"
   DEPENDENCIES std_msgs 
 )

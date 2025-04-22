@@ -32,12 +32,13 @@
 
 class WSG50Driver{
     public:
-        std::string ip_, name_;
-        int port_;
+        std::string ip_, name_,protocol_;
+        int port_,local_port_;
         double rate_;
         double grasping_force_;
         double width_, speed_, force_;
         double goal_width_, goal_speed_;
+        bool finger_sensors_;
         std::thread auto_update_thread_;
         int connected_;
 
@@ -48,7 +49,7 @@ class WSG50Driver{
         // Connexion / déconnexion
         bool connect();
         bool setup();
-        void disconnect();
+        bool disconnect();
 
         // Commandes principales
         int cmd(double pos, double speed,int mode);
