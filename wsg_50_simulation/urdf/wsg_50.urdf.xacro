@@ -6,6 +6,15 @@
                     Use e.g. for single contact point tip on finger. (default 0) -->
 <xacro:macro name="wsg_50_xacro" params="prefix parent finger_length finger_tip *origin sim_standalone:=false real_hardware:=false finger_type:='classic' config_file:=${xacro.load_yaml('$(find wsg_50_driver)/config/wsg50_setup.yaml')}">
 
+    <link name="${prefix}_base"/>
+
+    <joint name="${prefix}_base_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="${parent}"/>
+        <child link="${prefix}_base"/>
+    </joint>
+
+
     <joint name="${prefix}_mounting_plate_joint" type="fixed">
         <xacro:insert_block name="origin"/>
         <parent link="${parent}"/>
@@ -99,8 +108,8 @@
     </gazebo>
     
     
-    <joint name="${prefix}_width_joint" type="prismatic">
-        <limit lower="0.002" upper="0.11" effort="100" velocity="100"/>
+    <joint name="${prefix}_joint" type="prismatic">
+        <limit lower="0.0" upper="0.11" effort="100" velocity="100"/>
         <origin xyz="0 0 0" rpy="0 -1.5708 0" />
         <parent link="${prefix}_base_link"/>
         <child link="${prefix}_width" />
@@ -109,14 +118,14 @@
 
     <transmission name="${prefix}_base_trans" type="pr2_mechanism_model/SimpleTransmission">
         <actuator name="${prefix}_base_motor" />
-        <joint name="${prefix}_width_joint" />
+        <joint name="${prefix}_joint" />
         <mechanicalReduction>1</mechanicalReduction>
         <motorTorqueConstant>1</motorTorqueConstant>
     </transmission>
 
     <joint name="${prefix}_base_joint_gripper_left" type="prismatic">
-        <mimic joint="${prefix}_width_joint" multiplier="0.5" offset="0.0"/>
-        <limit lower="0.003" upper="0.055" effort="100" velocity="100"/>
+        <mimic joint="${prefix}_joint" multiplier="0.5" offset="0.0"/>
+        <limit lower="0.0" upper="0.055" effort="100" velocity="100"/>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <parent link="${prefix}_base_link"/>
         <child link="${prefix}_gripper_left" />
@@ -239,8 +248,8 @@
     <!-- GRIPPER RIGHT -->
 
     <joint name="${prefix}_base_joint_gripper_right" type="prismatic">
-        <mimic joint="${prefix}_width_joint" multiplier="0.5" offset="0.0"/>
-        <limit lower="0.003" upper="0.055" effort="100" velocity="100"/>
+        <mimic joint="${prefix}_joint" multiplier="0.5" offset="0.0"/>
+        <limit lower="0.0" upper="0.055" effort="100" velocity="100"/>
         <origin xyz="0 0 0" rpy="0 0 3.14159" />
         <parent link="${prefix}_base_link"/>
         <child link="${prefix}_gripper_right" />
@@ -328,7 +337,7 @@
             <hardware>
                 <plugin>gz_ros2_control/GazeboSimSystem</plugin>
             </hardware>
-            <joint name="${prefix}_width_joint">
+            <joint name="${prefix}_joint">
                 <command_interface name="velocity"/>
                 <command_interface name="position"/>
                 <state_interface name="velocity"/>
@@ -358,7 +367,7 @@
                 <param name="speed">${config_file.get('speed')}</param>
                 <param name="finger_sensors">${config_file.get('finger_sensors')}</param>
             </hardware>
-            <joint name="${prefix}_width_joint">
+            <joint name="${prefix}_joint">
                 <command_interface name="position"/>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>

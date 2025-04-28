@@ -14,5 +14,5 @@ gripper_controller:
     action_monitor_rate: 100.0 # Warning: This is must be the same as the update thread rate of the driver
     allow_stalling: false
     goal_tolerance: 0.0002
-    joint: wsg50_width_joint
+    joint: wsg50_joint
     max_effort: 20.0

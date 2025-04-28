@@ -6,4 +6,4 @@ local_port: 1501
 rate: 100.0
 grasping_force: 10.0
 speed: 20.0
-finger_sensors: "true"
+finger_sensors: "false"

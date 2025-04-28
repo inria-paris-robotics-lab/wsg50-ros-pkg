@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--This does not replace URDF, and is not an extension of URDF.
+    This is a format for representing semantic information about the robot structure.
+    A URDF file must exist for this robot as well, where the joints and the links that are referenced are defined
+-->
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+    <xacro:macro name="weiss-wsg50_group_define" params="group_name prefix">
+        <group name="${group_name}">
+            <link name="${prefix}_base"/>
+            <link name="${prefix}_mounting_plate"/>
+            <link name="${prefix}_base_link"/>
+            <link name="${prefix}_gripper_right"/>
+            <link name="${prefix}_gripper_left"/>
+            <link name="${prefix}_finger_left"/>
+            <link name="${prefix}_finger_right"/>
+            <link name="${prefix}_width"/>
+            <link name="${prefix}_center"/>
+            <joint name="${prefix}_joint"/>
+            <passive_joint name="${prefix}_base_joint_gripper_left"/>
+            <passive_joint name="${prefix}_base_joint_gripper_right"/>
+        </group>
+
+        <group_state name="open" group="${group_name}">
+            <joint name="${group_name}_joint" value="0.1"/>
+            <joint name="${group_name}_base_joint_gripper_left" value="-0.05"/>
+            <joint name="${group_name}_base_joint_gripper_right" value="0.05"/>
+        </group_state>
+        <group_state name="close" group="${group_name}">
+            <joint name="${group_name}_joint" value="0.006"/>
+            <joint name="${group_name}_base_joint_gripper_left" value="-0.003"/>
+            <joint name="${group_name}_base_joint_gripper_right" value="0.003"/>
+        </group_state>
+    </xacro:macro>
+
+
+    <xacro:macro name="weiss-wsg50_autocol" params="prefix">
+        
+        <disable_collisions link1="${prefix}_mounting_plate" link2="${prefix}_base_link" reason="Adjacent"/>
+        <disable_collisions link1="${prefix}_mounting_plate" link2="${prefix}_gripper_right" reason="Never"/>
+        <disable_collisions link1="${prefix}_mounting_plate" link2="${prefix}_gripper_left" reason="Never"/>
+        <disable_collisions link1="${prefix}_mounting_plate" link2="${prefix}_finger_left" reason="Never"/>
+        <disable_collisions link1="${prefix}_mounting_plate" link2="${prefix}_finger_right" reason="Never"/>
+
+        <disable_collisions link1="${prefix}_base_link" link2="${prefix}_gripper_right" reason="Adjacent"/>
+        <disable_collisions link1="${prefix}_base_link" link2="${prefix}_gripper_left" reason="Adjacent"/>
+        <disable_collisions link1="${prefix}_base_link" link2="${prefix}_finger_left" reason="Never"/>
+        <disable_collisions link1="${prefix}_base_link" link2="${prefix}_finger_right" reason="Never"/>
+        
+        <disable_collisions link1="${prefix}_gripper_right" link2="${prefix}_gripper_left" reason="Adjacent"/>
+        <disable_collisions link1="${prefix}_gripper_right" link2="${prefix}_finger_left" reason="Never"/>
+        <disable_collisions link1="${prefix}_gripper_right" link2="${prefix}_finger_right" reason="Adjacent"/>
+
+        <disable_collisions link1="${prefix}_gripper_left" link2="${prefix}_finger_left" reason="Adjacent"/>
+        <disable_collisions link1="${prefix}_gripper_left" link2="${prefix}_finger_right" reason="Never"/>
+
+        <disable_collisions link1="${prefix}_finger_left" link2="${prefix}_finger_right" reason="Adjacent"/>
+
+    </xacro:macro>
+
+
+    <xacro:macro name="weiss-wsg50_col_with" params="prefix link">
+        <disable_collisions link1="${prefix}_mounting_plate" link2="${link}" reason="Never"/>
+        <disable_collisions link1="${prefix}_base_link" link2="${link}" reason="Never"/>
+        <disable_collisions link1="${prefix}_gripper_right" link2="${link}" reason="Never"/>
+        <disable_collisions link1="${prefix}_gripper_left" link2="${link}" reason="Never"/>
+        <disable_collisions link1="${prefix}_finger_left" link2="${link}" reason="Never"/>
+        <disable_collisions link1="${prefix}_finger_right" link2="${link}" reason="Never"/>
+    </xacro:macro>
+
+</robot>
