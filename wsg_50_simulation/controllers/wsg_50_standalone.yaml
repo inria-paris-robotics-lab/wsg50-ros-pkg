@@ -4,49 +4,15 @@ controller_manager:
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
-
-    wsg_50_gl:
-      type: position_controllers/JointGroupPositionController
-    
-    wsg_50_gr:
-      type: position_controllers/JointGroupPositionController
-    
-    controller:
-      type: position_controllers/JointGroupPositionController
     
     gripper_controller:
       type: position_controllers/GripperActionController
 
-
-wsg_50_gl:
-  ros__parameters:
-    joints: 
-      - wsg50_base_joint_gripper_left
-    pid:
-      p: 100.0
-      d: 10.0
-
-wsg_50_gr:
-  ros__parameters:
-    joints: 
-      - wsg50_base_joint_gripper_right
-    pid:
-      p: 100.0
-      d: 10.0
-
-controller:
-  ros__parameters:
-    joints:
-      - wsg50_width_joint
-    command_interfaces:
-      - position
-    state_interfaces:
-      - position
 
 gripper_controller:
   ros__parameters:
     action_monitor_rate: 500.0
     allow_stalling: false
     goal_tolerance: 0.002
-    joint: wsg50_width_joint
+    joint: wsg50_joint
     max_effort: 0.0
