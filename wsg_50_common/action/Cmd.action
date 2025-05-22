@@ -1,0 +1,14 @@
+int32 mode  # Mode of operation
+# Possible values for mode:
+# 0: MODE_MOVE
+# 1: MODE_GRASP
+# 2: MODE_RELEASE
+float32 width # Width of the gripper
+float32 speed # Speed of the gripper
+---
+bool result # Result of the command
+# Possible values for result:
+# 0: RESULT_OK
+# 1: RESULT_ERROR
+---
+float32 position # Current position of the gripper

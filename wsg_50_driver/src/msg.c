@@ -52,10 +52,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "wsg_50/common.h"
-#include "wsg_50/checksum.h"
-#include "wsg_50/interface.h"
-#include "wsg_50/msg.h"
+#include "wsg_50_driver/common.h"
+#include "wsg_50_driver/checksum.h"
+#include "wsg_50_driver/interface.h"
+#include "wsg_50_driver/msg.h"
 
 
 //------------------------------------------------------------------------
@@ -304,7 +304,7 @@ void msg_close( void )
 void msg_free( msg_t *msg )
 {
 	if ( msg->data ) free( msg->data );
-	memset( msg, 0, sizeof( msg ) );
+	memset(msg, 0, sizeof(*msg)); 
 }
 
 

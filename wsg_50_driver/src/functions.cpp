@@ -54,10 +54,10 @@
 #include <cmath>
 #include <string>
 
-#include "wsg_50/common.h"
-#include "wsg_50/cmd.h"
-#include "wsg_50/msg.h"
-#include "wsg_50/functions.h"
+#include "wsg_50_driver/common.h"
+#include "wsg_50_driver/cmd.h"
+#include "wsg_50_driver/msg.h"
+#include "wsg_50_driver/functions.h"
 
 //------------------------------------------------------------------------
 // Support functions
@@ -96,7 +96,7 @@ float convert(unsigned char *b){
 /////////////////////////
 
 
-int homing( void )
+int homing( bool ignore_response )
 {
 	status_t status;
 	int res;
@@ -106,26 +106,37 @@ int homing( void )
 
 	// Set flags: Homing direction (0: default, 1: widthitive movement, 2: negative movement).
 	payload[0] = 0x00;
+	if(!ignore_response){
+		// Submit command and wait for response. Push result to stack.
+		res = cmd_submit( 0x20, payload, 1, true, &resp, &resp_len );
+		if ( res != 2 )
+		{
+			dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
+			if ( res > 0 ) free( resp );
+			return 0;
+		}
 
-	// Submit command and wait for response. Push result to stack.
-	res = cmd_submit( 0x20, payload, 1, true, &resp, &resp_len );
-	if ( res != 2 )
-	{
-		dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
-		if ( res > 0 ) free( resp );
-		return 0;
+		//dbgPrint("&resp: %s\n", resp);
+		//dbgPrint("&resp_len: %d\n", resp_len);
+
+		// Check response status
+		status = cmd_get_response_status( resp );
+		free( resp );
+		if ( status != E_SUCCESS )
+		{
+			dbgPrint( "Command HOMING not successful: %s\n", status_to_str( status ) );
+			return -1;
+		}
 	}
-
-	//dbgPrint("&resp: %s\n", resp);
-	//dbgPrint("&resp_len: %d\n", resp_len);
-
-	// Check response status
-	status = cmd_get_response_status( resp );
-	free( resp );
-	if ( status != E_SUCCESS )
-	{
-		dbgPrint( "Command HOMING not successful: %s\n", status_to_str( status ) );
-		return -1;
+	else{
+		// Submit command, do not wait for response
+		msg_t msg;
+		msg.id = 0x20; msg.len = 1; msg.data = &payload[0];
+		res = msg_send(&msg);
+		if (res <= 0) {
+			dbgPrint("Failed to send command HOMING\n");
+			return -1;
+		}
 	}
 
 	return 0;
@@ -228,7 +239,7 @@ int stop( bool ignore_response )
 }
 
 
-int ack_fault( void )
+int ack_fault( bool ignore_response )
 {
 	status_t status;
 	int res;
@@ -240,30 +251,42 @@ int ack_fault( void )
 	payload[1] = 0x63;
 	payload[2] = 0x6B;
 
-	// Submit command and wait for response. Push result to stack.
-	res = cmd_submit( 0x24, payload, 3, true, &resp, &resp_len );
-	if ( res != 2 )
-	{
-		dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
-		if ( res > 0 ) free( resp );
-		return 0;
+	if (!ignore_response){
+		// Submit command and wait for response. Push result to stack.
+		res = cmd_submit( 0x24, payload, 3, true, &resp, &resp_len );
+		if ( res != 2 )
+		{
+			dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
+			if ( res > 0 ) free( resp );
+			return 0;
+		}
+
+
+		// Check response status
+		status = cmd_get_response_status( resp );
+		free( resp );
+		if ( status != E_SUCCESS )
+		{
+			dbgPrint( "Command ACK not successful: %s\n", status_to_str( status ) );
+			return -1;
+		}
 	}
-
-
-	// Check response status
-	status = cmd_get_response_status( resp );
-	free( resp );
-	if ( status != E_SUCCESS )
-	{
-		dbgPrint( "Command ACK not successful: %s\n", status_to_str( status ) );
-		return -1;
+	else{
+		// Submit command, do not wait for response
+		msg_t msg;
+		msg.id = 0x24; msg.len = 3; msg.data = &payload[0];
+		res = msg_send(&msg);
+		if (res <= 0) {
+			dbgPrint("Failed to send command ACK\n");
+			return -1;
+		}
 	}
 
 	return 0;
 }
 
 
-int grasp( float objWidth, float speed )
+int grasp( float objWidth, float speed , bool ignore_response)
 {
 	status_t status;
 	int res;
@@ -275,29 +298,41 @@ int grasp( float objWidth, float speed )
 	memcpy( &payload[0], &objWidth, sizeof( float ) );
 	memcpy( &payload[4], &speed, sizeof( float ) );
 
-	// Submit command and wait for response. Push result to stack.
-	res = cmd_submit( 0x25, payload, 8, true, &resp, &resp_len );
-	if ( res != 2 )
-	{
-		dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
-		if ( res > 0 ) free( resp );
-		return 0;
+	if(!ignore_response){
+		// Submit command and wait for response. Push result to stack.
+		res = cmd_submit( 0x25, payload, 8, true, &resp, &resp_len );
+		if ( res != 2 )
+		{
+			dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
+			if ( res > 0 ) free( resp );
+			return 0;
+		}
+
+		// Check response status
+		status = cmd_get_response_status( resp );
+		free( resp );
+		if ( status != E_SUCCESS )
+		{
+			dbgPrint( "Command GRASP not successful: %s\n", status_to_str( status ) );
+			return -1;
+		}
+	}
+	else{
+		// Submit command, do not wait for response
+		msg_t msg;
+		msg.id = 0x25; msg.len = 8; msg.data = &payload[0];
+		res = msg_send(&msg);
+		if (res <= 0) {
+			dbgPrint("Failed to send command GRASP\n");
+			return -1;
+		}
 	}
 
-	// Check response status
-	status = cmd_get_response_status( resp );
-	free( resp );
-	if ( status != E_SUCCESS )
-	{
-		dbgPrint( "Command GRASP not successful: %s\n", status_to_str( status ) );
-		return -1;
-	}
-
-	return( 0 );
+	return 0;
 }
 
 
-int release( float width, float speed )
+int release( float width, float speed, bool ignore_response)
 {
 	status_t status;
 	int res;
@@ -308,23 +343,34 @@ int release( float width, float speed )
 	// Copy part width and speed
 	memcpy( &payload[0], &width, sizeof( float ) );
 	memcpy( &payload[4], &speed, sizeof( float ) );
+	if(!ignore_response){
+		// Submit command and wait for response. Push result to stack.
+		res = cmd_submit( 0x26, payload, 8, true, &resp, &resp_len );
+		if ( res != 2 )
+		{
+			dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
+			if ( res > 0 ) free( resp );
+			return -1;
+		}
 
-	// Submit command and wait for response. Push result to stack.
-	res = cmd_submit( 0x26, payload, 8, true, &resp, &resp_len );
-	if ( res != 2 )
-	{
-		dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
-		if ( res > 0 ) free( resp );
-		return -1;
+		// Check response status
+		status = cmd_get_response_status( resp );
+		free( resp );
+		if ( status != E_SUCCESS )
+		{
+			dbgPrint( "Command RELEASE not successful: %s\n", status_to_str( status ) );
+			return -1;
+		}
 	}
-
-	// Check response status
-	status = cmd_get_response_status( resp );
-	free( resp );
-	if ( status != E_SUCCESS )
-	{
-		dbgPrint( "Command RELEASE not successful: %s\n", status_to_str( status ) );
-		return -1;
+	else{
+		// Submit command, do not wait for response
+		msg_t msg;
+		msg.id = 0x26; msg.len = 8; msg.data = &payload[0];
+		res = msg_send(&msg);
+		if (res <= 0) {
+			dbgPrint("Failed to send command RELEASE\n");
+			return -1;
+		}
 	}
 
 	return 0;
@@ -404,7 +450,7 @@ int script_measure_move (unsigned char cmd_type, float cmd_width, float cmd_spee
 ///////////////////
 
 
-int setAcceleration( float acc )
+int setAcceleration( float acc, bool ignore_response )
 {
 	status_t status;
 	int res;
@@ -414,29 +460,40 @@ int setAcceleration( float acc )
 
 	// Copy target width and speed
 	memcpy( &payload[0], &acc, sizeof( float ) );
+	if(!ignore_response){
+		// Submit command and wait for response. Push result to stack.
+		res = cmd_submit( 0x30, payload, 4, true, &resp, &resp_len );
+		if ( res != 2 )
+		{
+			dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
+			if ( res > 0 ) free( resp );
+			return 0;
+		}
 
-	// Submit command and wait for response. Push result to stack.
-	res = cmd_submit( 0x30, payload, 4, true, &resp, &resp_len );
-	if ( res != 2 )
-	{
-		dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
-		if ( res > 0 ) free( resp );
-		return 0;
+		// Check response status
+		status = cmd_get_response_status( resp );
+		free( resp );
+		if ( status != E_SUCCESS )
+		{
+			dbgPrint( "Command SET ACCELERATION not successful: %s\n", status_to_str( status ) );
+			return -1;
+		}
 	}
-
-	// Check response status
-	status = cmd_get_response_status( resp );
-	free( resp );
-	if ( status != E_SUCCESS )
-	{
-		dbgPrint( "Command SET ACCELERATION not successful: %s\n", status_to_str( status ) );
-		return -1;
+	else{
+		// Submit command, do not wait for response
+		msg_t msg;
+		msg.id = 0x30; msg.len = 4; msg.data = &payload[0];
+		res = msg_send(&msg);
+		if (res <= 0) {
+			dbgPrint("Failed to send command SET ACCELERATION\n");
+			return -1;
+		}
 	}
 
 	return 0;
 }
 
-int setGraspingForceLimit( float force )
+int setGraspingForceLimit( float force, bool ignore_response )
 {
 	status_t status;
 	int res;
@@ -446,30 +503,41 @@ int setGraspingForceLimit( float force )
 
 	// Copy target width and speed
 	memcpy( &payload[0], &force, sizeof( float ) );
+	if(!ignore_response){
+		// Submit command and wait for response. Push result to stack.
+		res = cmd_submit( 0x32, payload, 4, true, &resp, &resp_len );
+		if ( res != 2 )
+		{
+			dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
+			if ( res > 0 ) free( resp );
+			return 0;
+		}
 
-	// Submit command and wait for response. Push result to stack.
-	res = cmd_submit( 0x32, payload, 4, true, &resp, &resp_len );
-	if ( res != 2 )
-	{
-		dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
-		if ( res > 0 ) free( resp );
-		return 0;
+		// Check response status
+		status = cmd_get_response_status( resp );
+		free( resp );
+		if ( status != E_SUCCESS )
+		{
+			dbgPrint( "Command SET GRASPING FORCE LIMIT not successful: %s\n", status_to_str( status ) );
+			return -1;
+		}
 	}
-
-	// Check response status
-	status = cmd_get_response_status( resp );
-	free( resp );
-	if ( status != E_SUCCESS )
-	{
-		dbgPrint( "Command SET GRASPING FORCE LIMIT not successful: %s\n", status_to_str( status ) );
-		return -1;
+	else{
+		// Submit command, do not wait for response
+		msg_t msg;
+		msg.id = 0x32; msg.len = 4; msg.data = &payload[0];
+		res = msg_send(&msg);
+		if (res <= 0) {
+			dbgPrint("Failed to send command SET GRASPING FORCE LIMIT\n");
+			return -1;
+		}
 	}
 
 	return 0;
 }
 
 
-int doTare( void )
+int doTare( bool ignore_response )
 {
     status_t status;
     int res;
@@ -477,24 +545,36 @@ int doTare( void )
     unsigned char *resp;
     unsigned int resp_len;
 
-    // Submit command and wait for response. Push result to stack.
-    res = cmd_submit( 0x38, payload, 0, true, &resp, &resp_len );
-    if ( res != 2 )
-    {
-        dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
-        if ( res > 0 ) free( resp );
-        return 0;
-    }
+	if(!ignore_response){
+		// Submit command and wait for response. Push result to stack.
+		res = cmd_submit( 0x38, payload, 0, true, &resp, &resp_len );
+		if ( res != 2 )
+		{
+			dbgPrint( "Response payload length doesn't match (is %d, expected 2)\n", res );
+			if ( res > 0 ) free( resp );
+			return 0;
+		}
 
 
-    // Check response status
-    status = cmd_get_response_status( resp );
-    free( resp );
-    if ( status != E_SUCCESS )
-    {
-        dbgPrint( "Command TARE not successful: %s\n", status_to_str( status ) );
-        return -1;
-    }
+		// Check response status
+		status = cmd_get_response_status( resp );
+		free( resp );
+		if ( status != E_SUCCESS )
+		{
+			dbgPrint( "Command TARE not successful: %s\n", status_to_str( status ) );
+			return -1;
+		}
+	}
+	else{
+		// Submit command, do not wait for response
+		msg_t msg;
+		msg.id = 0x38; msg.len = 0; msg.data = &payload[0];
+		res = msg_send(&msg);
+		if (res <= 0) {
+			dbgPrint("Failed to send command TARE\n");
+			return -1;
+		}
+	}
 
     return 0;
 }
@@ -518,6 +598,9 @@ const char * systemState( void )
 
 	// Submit command and wait for response. Expecting exactly 4 bytes response payload.
 	res = cmd_submit( 0x40, payload, 3, false, &resp, &resp_len );
+	// printf("Envoi : ID = %d, Payload = [%d %d %d], Len = %d\n", 
+	// 	0x40, payload[0], payload[1], payload[2], 3);
+ 
 	if ( res != 6 )
 	{
 		dbgPrint( "Response payload length doesn't match (is %d, expected 6)\n", res );
@@ -527,15 +610,17 @@ const char * systemState( void )
 
 	// Check response status
 	status = cmd_get_response_status( resp );
+	// printf("Statut brut reçu: %d (0x%04X)\n", status, status);
 
-	/*
-	dbgPrint("LSB -> resp[0]: %x\n", resp[2]);
-	dbgPrint("       resp[1]: %x\n", resp[3]);
-	dbgPrint("       resp[2]: %x\n", resp[4]);
-	dbgPrint("MSB -> resp[3]: %x\n", resp[5]);
-	*/
 
-	return getStateValues(resp);
+	
+	// dbgPrint("LSB -> resp[0]: %x\n", resp[2]);
+	// dbgPrint("       resp[1]: %x\n", resp[3]);
+	// dbgPrint("       resp[2]: %x\n", resp[4]);
+	// dbgPrint("MSB -> resp[3]: %x\n", resp[5]);
+	
+	// const char * state = getStateValues(resp);
+	// dbgPrint("State: %s\n", state);
 
 	if ( status != E_SUCCESS )
 	{
@@ -544,9 +629,9 @@ const char * systemState( void )
 		return 0;
 	}
 
-	free( resp );
 
-    return 0;
+	return getStateValues(resp);
+
 
 	//return (int) resp[2]; MBJ
 }

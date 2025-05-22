@@ -52,8 +52,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "wsg_50/interface.h"
-#include "wsg_50/tcp.h"
+#include "wsg_50_driver/interface.h"
+#include "wsg_50_driver/tcp.h"
 
 
 //------------------------------------------------------------------------
@@ -81,6 +81,8 @@ const interface_t tcp =
 };
 
 static tcp_conn_t conn;
+static pthread_mutex_t comm_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 
 
 //------------------------------------------------------------------------
@@ -163,8 +165,12 @@ int tcp_read( unsigned char *buf, unsigned int len )
     if ( conn.sock <= 0 || buf == NULL ) return -1;
     if ( len == 0 ) return 0;
 
+	// Wait for communication mutex
+    pthread_mutex_lock(&comm_mutex);
 	// Read desired number of bytes
 	res = recv( conn.sock, buf, len, 0 );
+	// Release communication mutex
+	pthread_mutex_unlock(&comm_mutex);
 	if ( res < 0 )
 	{
 		close( conn.sock );
@@ -173,6 +179,8 @@ int tcp_read( unsigned char *buf, unsigned int len )
 
     return res;
 }
+
+
 
 
 /**
@@ -190,7 +198,11 @@ int tcp_write( unsigned char *buf, unsigned int len )
 
 	if ( conn.sock <= 0 ) return( -1 );
 
+	// Wait for communication mutex
+	pthread_mutex_lock(&comm_mutex);
 	res = send( conn.sock, buf, len, 0 );
+	// Release communication mutex
+	pthread_mutex_unlock(&comm_mutex);
     if ( res >= 0 ) return( res );
     else
     {

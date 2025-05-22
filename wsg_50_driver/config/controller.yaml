@@ -1,0 +1,18 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 500  # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+    
+    gripper_controller:
+      type: position_controllers/GripperActionController
+
+
+gripper_controller:
+  ros__parameters:
+    action_monitor_rate: 100.0 # Warning: This is must be the same as the update thread rate of the driver
+    allow_stalling: false
+    goal_tolerance: 0.0002
+    joint: wsg50_joint
+    max_effort: 20.0

@@ -1,4 +1,5 @@
 string status
+bool object_grasped
 float32 width
 float32 speed
 float32 acc

@@ -64,8 +64,8 @@
 	#include <sys/stat.h>
 #endif
 
-#include "wsg_50/interface.h"
-#include "wsg_50/serial.h"
+#include "wsg_50_driver/interface.h"
+#include "wsg_50_driver/serial.h"
 
 
 //------------------------------------------------------------------------
@@ -261,5 +261,4 @@ int serial_write( unsigned char *buf, unsigned int len )
 {
 	return( write( conn.fd, (void *) buf, len ) );
 }
-
 

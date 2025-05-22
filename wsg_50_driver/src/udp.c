@@ -52,8 +52,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "wsg_50/interface.h"
-#include "wsg_50/udp.h"
+#include "wsg_50_driver/interface.h"
+#include "wsg_50_driver/udp.h"
 
 
 //------------------------------------------------------------------------

@@ -54,13 +54,13 @@
 #include <string.h>
 #include <assert.h>
 
-#include "wsg_50/common.h"
-#include "wsg_50/msg.h"
-#include "wsg_50/cmd.h"
+#include "wsg_50_driver/common.h"
+#include "wsg_50_driver/msg.h"
+#include "wsg_50_driver/cmd.h"
 
-#include "wsg_50/tcp.h"
-#include "wsg_50/udp.h"
-#include "wsg_50/serial.h"
+#include "wsg_50_driver/tcp.h"
+#include "wsg_50_driver/udp.h"
+#include "wsg_50_driver/serial.h"
 
 
 //------------------------------------------------------------------------
