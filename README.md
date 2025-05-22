@@ -2,9 +2,7 @@
 
 Forked from: [https://github.com/nalt/wsg50-ros-pkg](https://github.com/nalt/wsg50-ros-pkg)
 
-<div align="center">
-    <img src="doc/wsg.png" alt="Schunk WSG-50 Gripper">
-</div>
+![Schunk WSG-50 Gripper](doc/wsg.png)
 
 ## Overview of Updates in this Repository
 

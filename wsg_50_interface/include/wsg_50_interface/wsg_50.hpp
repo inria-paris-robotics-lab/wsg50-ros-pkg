@@ -10,10 +10,10 @@
 #include <chrono>
 
 
-#include "wsg_50_interface/common.h"
-#include "wsg_50_interface/cmd.h"
-#include "wsg_50_interface/msg.h"
-#include "wsg_50_interface/functions.h"
+#include "wsg_50_driver/common.h"
+#include "wsg_50_driver/cmd.h"
+#include "wsg_50_driver/msg.h"
+#include "wsg_50_driver/functions.h"
 
 #include <rclcpp/rclcpp.hpp>
 

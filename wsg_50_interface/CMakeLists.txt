@@ -13,6 +13,7 @@ find_package(pluginlib REQUIRED)
 find_package(controller_interface REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(class_loader REQUIRED)
+find_package(wsg_50_driver REQUIRED)
 
 
 # Include directories
@@ -24,17 +25,8 @@ include_directories(
 
 # Source files
 set(SOURCES
-  src/wsg_ros_interface.cpp include/wsg_50_interface/wsg_ros_interface.hpp
+  src/wsg_ros_interface.cpp 
   src/wsg_50.cpp
-  src/checksum.cpp include/wsg_50_interface/checksum.h
-  src/cmd.c include/wsg_50_interface/cmd.h
-  src/common.cpp include/wsg_50_interface/common.h
-  src/functions.cpp include/wsg_50_interface/functions.h
-  src/interface.cpp include/wsg_50_interface/interface.h
-  src/msg.c include/wsg_50_interface/msg.h
-  src/tcp.c include/wsg_50_interface/tcp.h
-  src/udp.c include/wsg_50_interface/udp.h
-  src/serial.c include/wsg_50_interface/serial.h
 )
 
 # Library for the hardware interface
@@ -47,6 +39,7 @@ ament_target_dependencies(${PROJECT_NAME}
   controller_interface
   ament_index_cpp
   class_loader
+  wsg_50_driver
 )
 
 # Export the plugin
@@ -73,6 +66,7 @@ ament_export_dependencies(
   rclcpp
   hardware_interface
   pluginlib
+  wsg_50_driver
 )
 
 ament_export_include_directories(include)
