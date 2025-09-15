@@ -7,6 +7,17 @@ Panels:
         - /Global Options1
         - /Status1
         - /RobotModel1
+        - /RobotModel1/Links1
+        - /RobotModel1/Links1/base_link1
+        - /RobotModel1/Links1/wsg50_base1
+        - /RobotModel1/Links1/wsg50_base_link1
+        - /RobotModel1/Links1/wsg50_center1
+        - /RobotModel1/Links1/wsg50_finger_left1
+        - /RobotModel1/Links1/wsg50_finger_right1
+        - /RobotModel1/Links1/wsg50_gripper_left1
+        - /RobotModel1/Links1/wsg50_gripper_right1
+        - /RobotModel1/Links1/wsg50_mounting_plate1
+        - /RobotModel1/Links1/wsg50_width1
       Splitter Ratio: 0.5
     Tree Height: 555
   - Class: rviz_common/Selection
@@ -68,45 +79,49 @@ Visualization Manager:
         Link Tree Style: Links in Alphabetic Order
         base_link:
           Alpha: 1
-          Show Axes: false
+          Show Axes: true
+          Show Trail: false
+        wsg50_base:
+          Alpha: 1
+          Show Axes: true
           Show Trail: false
         wsg50_base_link:
           Alpha: 1
-          Show Axes: false
+          Show Axes: true
           Show Trail: false
           Value: true
         wsg50_center:
           Alpha: 1
-          Show Axes: false
+          Show Axes: true
           Show Trail: false
         wsg50_finger_left:
           Alpha: 1
-          Show Axes: false
+          Show Axes: true
           Show Trail: false
           Value: true
         wsg50_finger_right:
           Alpha: 1
-          Show Axes: false
+          Show Axes: true
           Show Trail: false
           Value: true
         wsg50_gripper_left:
           Alpha: 1
-          Show Axes: false
+          Show Axes: true
           Show Trail: false
           Value: true
         wsg50_gripper_right:
           Alpha: 1
-          Show Axes: false
+          Show Axes: true
           Show Trail: false
           Value: true
         wsg50_mounting_plate:
           Alpha: 1
-          Show Axes: false
+          Show Axes: true
           Show Trail: false
           Value: true
         wsg50_width:
           Alpha: 1
-          Show Axes: false
+          Show Axes: true
           Show Trail: false
       Mass Properties:
         Inertia: false
@@ -162,7 +177,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 0.41648995876312256
+      Distance: 0.3833690881729126
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -177,10 +192,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3653982877731323
+      Pitch: 0.23539838194847107
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.423573970794678
+      Yaw: 1.688571572303772
     Saved: ~
 Window Geometry:
   Displays:
