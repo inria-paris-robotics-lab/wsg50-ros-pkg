@@ -59,6 +59,10 @@ namespace wsg_50_interface
       RCLCPP_ERROR(rclcpp::get_logger("WSG50HardwareInterface"), "Exception in on_activate: %s", e.what());
       return hardware_interface::CallbackReturn::ERROR;
     }
+    rclcpp::sleep_for(std::chrono::seconds(1)); 
+
+    wsg_.goal_width_ = wsg_.width_;
+    last_goal_position_ = wsg_.width_;
 
     return hardware_interface::CallbackReturn::SUCCESS;
   }

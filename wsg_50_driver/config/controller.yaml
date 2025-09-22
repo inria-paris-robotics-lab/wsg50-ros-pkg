@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 500  # Hz
+    update_rate: 100  # Hz
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
@@ -15,4 +15,4 @@ gripper_controller:
     allow_stalling: false
     goal_tolerance: 0.0002
     joint: wsg50_joint
-    max_effort: 20.0
+    max_effort: 80.0

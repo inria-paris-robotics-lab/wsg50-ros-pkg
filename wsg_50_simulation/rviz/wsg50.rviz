@@ -7,17 +7,6 @@ Panels:
         - /Global Options1
         - /Status1
         - /RobotModel1
-        - /RobotModel1/Links1
-        - /RobotModel1/Links1/base_link1
-        - /RobotModel1/Links1/wsg50_base1
-        - /RobotModel1/Links1/wsg50_base_link1
-        - /RobotModel1/Links1/wsg50_center1
-        - /RobotModel1/Links1/wsg50_finger_left1
-        - /RobotModel1/Links1/wsg50_finger_right1
-        - /RobotModel1/Links1/wsg50_gripper_left1
-        - /RobotModel1/Links1/wsg50_gripper_right1
-        - /RobotModel1/Links1/wsg50_mounting_plate1
-        - /RobotModel1/Links1/wsg50_width1
       Splitter Ratio: 0.5
     Tree Height: 555
   - Class: rviz_common/Selection
@@ -79,49 +68,49 @@ Visualization Manager:
         Link Tree Style: Links in Alphabetic Order
         base_link:
           Alpha: 1
-          Show Axes: true
+          Show Axes: false
           Show Trail: false
         wsg50_base:
           Alpha: 1
-          Show Axes: true
+          Show Axes: false
           Show Trail: false
         wsg50_base_link:
           Alpha: 1
-          Show Axes: true
+          Show Axes: false
           Show Trail: false
           Value: true
         wsg50_center:
           Alpha: 1
-          Show Axes: true
+          Show Axes: false
           Show Trail: false
         wsg50_finger_left:
           Alpha: 1
-          Show Axes: true
+          Show Axes: false
           Show Trail: false
           Value: true
         wsg50_finger_right:
           Alpha: 1
-          Show Axes: true
+          Show Axes: false
           Show Trail: false
           Value: true
         wsg50_gripper_left:
           Alpha: 1
-          Show Axes: true
+          Show Axes: false
           Show Trail: false
           Value: true
         wsg50_gripper_right:
           Alpha: 1
-          Show Axes: true
+          Show Axes: false
           Show Trail: false
           Value: true
         wsg50_mounting_plate:
           Alpha: 1
-          Show Axes: true
+          Show Axes: false
           Show Trail: false
           Value: true
         wsg50_width:
           Alpha: 1
-          Show Axes: true
+          Show Axes: false
           Show Trail: false
       Mass Properties:
         Inertia: false
@@ -213,5 +202,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1200
-  X: 352
-  Y: 175
+  X: 52
+  Y: 88
