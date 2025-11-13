@@ -26,9 +26,9 @@
             <joint name="${group_name}_base_joint_gripper_right" value="0.05"/>
         </group_state>
         <group_state name="close" group="${group_name}">
-            <joint name="${group_name}_joint" value="0.006"/>
-            <joint name="${group_name}_base_joint_gripper_left" value="-0.003"/>
-            <joint name="${group_name}_base_joint_gripper_right" value="0.003"/>
+            <joint name="${group_name}_joint" value="0.02"/>
+            <joint name="${group_name}_base_joint_gripper_left" value="-0.01"/>
+            <joint name="${group_name}_base_joint_gripper_right" value="0.01"/>
         </group_state>
     </xacro:macro>
 

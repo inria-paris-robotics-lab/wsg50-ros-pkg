@@ -70,6 +70,10 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+        wsg50_base:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
         wsg50_base_link:
           Alpha: 1
           Show Axes: false
@@ -162,7 +166,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 0.41648995876312256
+      Distance: 0.3833690881729126
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -177,10 +181,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3653982877731323
+      Pitch: 0.23539838194847107
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.423573970794678
+      Yaw: 1.688571572303772
     Saved: ~
 Window Geometry:
   Displays:
@@ -198,5 +202,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1200
-  X: 352
-  Y: 175
+  X: 52
+  Y: 88
